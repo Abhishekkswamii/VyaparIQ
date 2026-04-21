@@ -34,11 +34,17 @@ CREATE TABLE IF NOT EXISTS cart_items (
 
 -- ── Shopping Sessions ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS shopping_sessions (
-    id            SERIAL PRIMARY KEY,
-    user_id       INTEGER        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    total_amount  DECIMAL(10, 2) NOT NULL DEFAULT 0,
-    item_count    INTEGER        NOT NULL DEFAULT 0,
-    created_at    TIMESTAMP      DEFAULT NOW()
+    id                SERIAL PRIMARY KEY,
+    user_id           INTEGER        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    total_amount      DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    total_spent       DECIMAL(10, 2) NOT NULL DEFAULT 0,
+    item_count        INTEGER        NOT NULL DEFAULT 0,
+    budget_amount     DECIMAL(10, 2) DEFAULT 0,
+    savings_achieved  DECIMAL(10, 2) DEFAULT 0,
+    items_json        JSONB,
+    started_at        TIMESTAMP      DEFAULT NOW(),
+    ended_at          TIMESTAMP,
+    created_at        TIMESTAMP      DEFAULT NOW()
 );
 
 -- ── Budget Settings ──────────────────────────────────────────────

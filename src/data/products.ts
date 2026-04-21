@@ -8,6 +8,8 @@ export interface Product {
   rating?: number;
   reviews?: number;
   badge?: string;
+  cheaperAlternativeId?: string;
+  barcode?: string;
 }
 
 const U = "https://images.unsplash.com/photo";
@@ -23,6 +25,7 @@ export const products: Product[] = [
     rating: 4.3,
     reviews: 1204,
     badge: "Fresh",
+    barcode: "8901030840215",
   },
   {
     id: "2",
@@ -33,6 +36,7 @@ export const products: Product[] = [
     category: "Dairy",
     rating: 4.6,
     reviews: 3421,
+    barcode: "8901233019826",
   },
   {
     id: "3",
@@ -44,6 +48,7 @@ export const products: Product[] = [
     rating: 4.1,
     reviews: 892,
     badge: "Bestseller",
+    barcode: "8901063010215",
   },
   {
     id: "4",
@@ -54,6 +59,7 @@ export const products: Product[] = [
     category: "Dairy",
     rating: 4.5,
     reviews: 2108,
+    barcode: "8901725181130",
   },
   {
     id: "5",
@@ -64,6 +70,8 @@ export const products: Product[] = [
     category: "Fruits",
     rating: 4.2,
     reviews: 657,
+    cheaperAlternativeId: "1",
+    barcode: "8901058851438",
   },
   {
     id: "6",
@@ -75,6 +83,7 @@ export const products: Product[] = [
     rating: 4.4,
     reviews: 1876,
     badge: "Popular",
+    barcode: "8901491101745",
   },
   {
     id: "7",
@@ -86,6 +95,7 @@ export const products: Product[] = [
     rating: 4.7,
     reviews: 5210,
     badge: "Bestseller",
+    barcode: "8901425018963",
   },
   {
     id: "8",
@@ -96,6 +106,7 @@ export const products: Product[] = [
     category: "Pantry",
     rating: 4.5,
     reviews: 1342,
+    barcode: "8901396512370",
   },
   {
     id: "9",
@@ -107,6 +118,7 @@ export const products: Product[] = [
     rating: 4.0,
     reviews: 734,
     badge: "Fresh",
+    barcode: "8901764710238",
   },
   {
     id: "10",
@@ -117,6 +129,7 @@ export const products: Product[] = [
     category: "Vegetables",
     rating: 4.2,
     reviews: 519,
+    barcode: "8901030715921",
   },
   {
     id: "11",
@@ -127,6 +140,7 @@ export const products: Product[] = [
     category: "Dairy",
     rating: 4.4,
     reviews: 987,
+    cheaperAlternativeId: "12",
   },
   {
     id: "12",
@@ -168,6 +182,7 @@ export const products: Product[] = [
     category: "Grains",
     rating: 4.1,
     reviews: 823,
+    cheaperAlternativeId: "7",
   },
   {
     id: "16",
@@ -179,5 +194,6 @@ export const products: Product[] = [
     rating: 4.4,
     reviews: 2897,
     badge: "Fresh",
+    cheaperAlternativeId: "1",
   },
 ];

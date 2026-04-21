@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "@/data/products";
+import { useFamilyStore } from "./family-store";
 
 export interface CartItem extends Product {
   quantity: number;
+  addedBy?: string;
 }
 
 interface CartState {
@@ -48,6 +50,9 @@ export const useCartStore = create<CartState>()(
       lastUpdated: Date.now(),
 
       addItem: (product) => {
+        const addedBy = useFamilyStore.getState().enabled
+          ? useFamilyStore.getState().activeMemberId
+          : undefined;
         set((state) => {
           const existing = state.items.find((item) => item.id === product.id);
           const items = existing
@@ -56,7 +61,7 @@ export const useCartStore = create<CartState>()(
                   ? { ...item, quantity: item.quantity + 1 }
                   : item
               )
-            : [...state.items, { ...product, quantity: 1 }];
+            : [...state.items, { ...product, quantity: 1, addedBy }];
           return { items, ...derive(items) };
         });
         scheduleSync(() => get().syncToBackend());

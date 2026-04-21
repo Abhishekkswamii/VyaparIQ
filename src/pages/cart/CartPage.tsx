@@ -14,6 +14,14 @@ import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
 import CartItem from "@/components/cart/CartItem";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
+import SmartSuggestions from "@/components/cart/SmartSuggestions";
+import { formatINR } from "@/lib/format";
+import { useSessionStore } from "@/store/session-store";
+import PredictiveBanner from "@/components/cart/PredictiveBanner";
+import FamilyPanel from "@/components/family/FamilyPanel";
+import OffersPanel from "@/components/cart/OffersPanel";
+import BudgetOptimizer from "@/components/cart/BudgetOptimizer";
+import { useOffersStore, calculateDiscount } from "@/store/offers-store";
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
@@ -22,10 +30,15 @@ export default function CartPage() {
   const clearCart = useCartStore((s) => s.clearCart);
   const budget = useBudgetStore((s) => s.budget);
 
+  const endSession = useSessionStore((s) => s.endSession);
+  const getAppliedOffer = useOffersStore((s) => s.getAppliedOffer);
   const [checkingOut, setCheckingOut] = useState(false);
 
   const count = totalItems();
   const price = totalPrice();
+  const appliedOffer = getAppliedOffer();
+  const { total: discountTotal } = calculateDiscount(items, appliedOffer);
+  const finalPrice = Math.max(0, price - discountTotal);
   const hasBudget = budget > 0;
   const isOverBudget = hasBudget && price > budget;
   const remaining = hasBudget ? budget - price : 0;
@@ -63,6 +76,13 @@ export default function CartPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-5 pb-32 pt-8">
+      {/* Full-width budget exceeded banner */}
+      {isOverBudget && (
+        <div className="-mx-5 mb-5 flex items-center justify-center gap-2 bg-red-600 px-4 py-3 text-sm font-bold text-white">
+          🚨 Budget exceeded by {formatINR(price - budget)}
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -89,7 +109,7 @@ export default function CartPage() {
           >
             <AlertTriangle size={20} className="shrink-0 text-red-600 dark:text-red-400" />
             <p className="text-sm font-semibold text-red-700 dark:text-red-400">
-              Over budget by ₹{(price - budget).toFixed(2)}! Consider removing some items.
+              Over budget by {formatINR(price - budget)}! Consider removing some items.
             </p>
           </motion.div>
         )}
@@ -112,6 +132,7 @@ export default function CartPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Items list */}
         <div className="space-y-3 lg:col-span-2">
+          <FamilyPanel />
           <AnimatePresence mode="popLayout">
             {items.map((item) => (
               <CartItem key={item.id} item={item} />
@@ -125,6 +146,9 @@ export default function CartPage() {
             <ShoppingBag size={15} />
             Continue shopping
           </Link>
+
+          <SmartSuggestions />
+          <BudgetOptimizer />
         </div>
 
         {/* Order summary sidebar */}
@@ -168,13 +192,13 @@ export default function CartPage() {
                   />
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-gray-400 dark:text-gray-500">
-                  <span>₹{price.toFixed(2)} spent</span>
-                  <span>₹{budget.toFixed(2)} total</span>
+                  <span>{formatINR(price)} spent</span>
+                  <span>{formatINR(budget)} total</span>
                 </div>
                 {!isOverBudget && (
                   <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-orange-600 dark:text-orange-400">
                     <CheckCircle2 size={11} />
-                    ₹{remaining.toFixed(2)} remaining
+                    {formatINR(remaining)} remaining
                   </p>
                 )}
               </div>
@@ -188,6 +212,16 @@ export default function CartPage() {
               </Link>
             )}
 
+            {/* Offers */}
+            <div className="mb-5">
+              <OffersPanel />
+            </div>
+
+            {/* Predictive budget warning */}
+            <div className="mb-5">
+              <PredictiveBanner />
+            </div>
+
             {/* Price breakdown */}
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
@@ -195,7 +229,7 @@ export default function CartPage() {
                   Subtotal ({count} {count === 1 ? "item" : "items"})
                 </span>
                 <span className="font-semibold text-gray-900 dark:text-gray-100">
-                  ₹{price.toFixed(2)}
+                  {formatINR(price)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
@@ -207,14 +241,16 @@ export default function CartPage() {
                   <Tag size={13} />
                   Discount
                 </span>
-                <span className="font-semibold text-gray-400 dark:text-gray-600">—</span>
+                <span className={`font-semibold ${discountTotal > 0 ? "text-green-600" : "text-gray-400 dark:text-gray-600"}`}>
+                  {discountTotal > 0 ? `-${formatINR(discountTotal)}` : "—"}
+                </span>
               </div>
               <div className="h-px bg-gray-100 dark:bg-gray-700" />
               <div className="flex items-center justify-between">
                 <span className="font-bold text-gray-900 dark:text-white">Total</span>
                 <AnimatedNumber
-                  value={price}
-                  className="text-xl font-extrabold text-gray-900 dark:text-white"
+                  value={finalPrice}
+                  className={`text-xl font-extrabold ${isOverBudget ? "text-red-600 shake" : "text-gray-900 dark:text-white"}`}
                 />
               </div>
             </div>
@@ -222,15 +258,7 @@ export default function CartPage() {
             <button
               onClick={async () => {
                 setCheckingOut(true);
-                try {
-                  await fetch("/api/cart/checkout", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                  });
-                } catch {
-                  // Optimistic — proceed regardless
-                }
-                clearCart();
+                await endSession();
                 setCheckingOut(false);
               }}
               disabled={checkingOut}

@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { ShoppingCart, Minus, Plus, Star } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Star, Lightbulb } from "lucide-react";
 import type { Product } from "@/data/products";
+import { products } from "@/data/products";
 import { useCartStore } from "@/store/cart-store";
+import { useBudgetStore } from "@/store/budget-store";
+import { usePrefsStore } from "@/store/prefs-store";
 
 const BADGE_COLORS: Record<string, string> = {
   Fresh: "bg-green-500",
@@ -47,9 +50,18 @@ export default function ProductCard({ product }: { product: Product }) {
   const items = useCartStore((s) => s.items);
   const increment = useCartStore((s) => s.incrementQuantity);
   const decrement = useCartStore((s) => s.decrementQuantity);
+  const budget = useBudgetStore((s) => s.budget);
+  const addRecentView = usePrefsStore((s) => s.addRecentView);
   const [imgError, setImgError] = useState(false);
 
   const cartItem = items.find((i) => i.id === product.id);
+  const spent = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const isOverBudget = budget > 0 && spent >= budget;
+
+  const altProduct = product.cheaperAlternativeId
+    ? products.find((p) => p.id === product.cheaperAlternativeId)
+    : undefined;
+  const hasCheaperAlt = altProduct && product.price - altProduct.price > 10;
 
   const discount =
     product.mrp && product.mrp > product.price
@@ -59,7 +71,10 @@ export default function ProductCard({ product }: { product: Product }) {
   const fallbackBg = CATEGORY_FALLBACK[product.category] ?? "bg-gray-100";
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-sm border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-900">
+    <div
+      className="group flex flex-col overflow-hidden rounded-sm border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-900"
+      onMouseEnter={() => addRecentView(product.id)}
+    >
       {/* Image area */}
       <div className={`relative overflow-hidden ${fallbackBg}`}>
         {product.badge && (
@@ -116,6 +131,16 @@ export default function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
+          {hasCheaperAlt && !cartItem && (
+            <button
+              onClick={() => addItem(altProduct!)}
+              className="mb-2 flex w-full items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400 dark:hover:bg-green-900/30"
+            >
+              <Lightbulb size={12} />
+              Cheaper option: ₹{altProduct!.price}
+            </button>
+          )}
+
           {cartItem ? (
             <div className="flex w-full items-center justify-between rounded bg-orange-50 px-2 py-1.5 dark:bg-orange-500/10">
               <button
@@ -137,10 +162,15 @@ export default function ProductCard({ product }: { product: Product }) {
           ) : (
             <button
               onClick={() => addItem(product)}
-              className="flex w-full items-center justify-center gap-1.5 rounded bg-orange-500 py-2.5 text-sm font-semibold text-white transition-all hover:bg-orange-600 active:scale-[0.97]"
+              disabled={isOverBudget}
+              className={`flex w-full items-center justify-center gap-1.5 rounded py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
+                isOverBudget
+                  ? "cursor-not-allowed bg-gray-300 text-gray-500 dark:bg-gray-700 dark:text-gray-500"
+                  : "bg-orange-500 text-white hover:bg-orange-600"
+              }`}
             >
               <ShoppingCart size={15} />
-              Add to Cart
+              {isOverBudget ? "Over Budget" : "Add to Cart"}
             </button>
           )}
         </div>

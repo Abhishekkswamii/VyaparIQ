@@ -1,8 +1,9 @@
 import { useState, useMemo } from "react";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { products } from "@/data/products";
 import ProductCard from "@/components/ui/ProductCard";
+import { usePrefsStore } from "@/store/prefs-store";
 
 const ALL_CATEGORIES = [
   "All",
@@ -74,6 +75,26 @@ export default function ShopPage() {
   };
 
   const hasFilters = category !== "All" || sortBy !== "default" || query || priceKey;
+
+  const favCats = usePrefsStore((s) => s.favoriteCategories);
+  const recentIds = usePrefsStore((s) => s.recentlyViewed);
+
+  const recommended = useMemo(() => {
+    const scored = products.map((p) => {
+      let score = 0;
+      if (favCats.includes(p.category)) score += 3;
+      const recIdx = recentIds.indexOf(p.id);
+      if (recIdx !== -1) score += 2 - recIdx * 0.1;
+      if ((p.rating ?? 0) >= 4.5) score += 1;
+      if (p.badge) score += 0.5;
+      return { product: p, score };
+    });
+    return scored
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map((s) => s.product);
+  }, [favCats, recentIds]);
 
   const FilterSidebar = () => (
     <div className="space-y-5">
@@ -264,6 +285,29 @@ export default function ShopPage() {
                 </select>
               </div>
             </div>
+
+            {/* Recommended for you */}
+            {recommended.length > 0 && !query && category === "All" && (
+              <div className="mb-5">
+                <div className="mb-2 flex items-center gap-2">
+                  <Heart size={15} className="text-pink-500" />
+                  <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Recommended For You</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {recommended.map((product) => (
+                    <motion.div
+                      key={`rec-${product.id}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <ProductCard product={product} />
+                    </motion.div>
+                  ))}
+                </div>
+                <div className="my-4 h-px bg-gray-200 dark:bg-gray-800" />
+              </div>
+            )}
 
             {/* Product grid */}
             {filtered.length > 0 ? (

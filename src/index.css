@@ -25,3 +25,37 @@
     display: none;
   }
 }
+
+/* ── Toast slide-in ── */
+@keyframes toast-slide-in {
+  from { opacity: 0; transform: translateX(100%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.toast-slide-in {
+  animation: toast-slide-in 0.3s ease-out;
+}
+
+/* ── Shake ── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 50%, 90% { transform: translateX(-4px); }
+  30%, 70% { transform: translateX(4px); }
+}
+.shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ── Budget health pulse ── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.6); }
+}
+.pulse-dot {
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+/* ── Over-budget row tint ── */
+.cart-item-over {
+  background-color: rgba(239, 68, 68, 0.06) !important;
+  border-left: 3px solid #ef4444;
+}

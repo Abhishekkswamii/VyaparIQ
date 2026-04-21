@@ -6,6 +6,8 @@ import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
+import { formatINR } from "@/lib/format";
+import { useSessionStore } from "@/store/session-store";
 
 export default function CartSummary() {
   const totalItems = useCartStore((s) => s.totalItems);
@@ -13,6 +15,7 @@ export default function CartSummary() {
   const clearCart = useCartStore((s) => s.clearCart);
   const budget = useBudgetStore((s) => s.budget);
   const close = useCartUIStore((s) => s.closeDrawer);
+  const endSession = useSessionStore((s) => s.endSession);
   const [checkingOut, setCheckingOut] = useState(false);
 
   const count = totalItems();
@@ -30,7 +33,7 @@ export default function CartSummary() {
           <div className="mb-2 flex items-center justify-between text-xs font-medium">
             <span className="text-gray-500 dark:text-gray-500">Budget</span>
             <span className={isOverBudget ? "text-red-500" : "text-gray-700 dark:text-gray-200"}>
-              ₹{price.toFixed(2)} / ₹{budget.toFixed(2)}
+              {formatINR(price)} / {formatINR(budget)}
             </span>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
@@ -57,10 +60,10 @@ export default function CartSummary() {
             {isOverBudget ? (
               <>
                 <AlertTriangle size={11} />
-                Over budget by ₹{(price - budget).toFixed(2)}
+                Over budget by {formatINR(price - budget)}
               </>
             ) : (
-              `₹${remaining.toFixed(2)} remaining`
+              `${formatINR(remaining)} remaining`
             )}
           </p>
         </div>
@@ -112,15 +115,7 @@ export default function CartSummary() {
       <button
         onClick={async () => {
           setCheckingOut(true);
-          try {
-            await fetch("/api/cart/checkout", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            });
-          } catch {
-            // Optimistic — proceed regardless
-          }
-          clearCart();
+          await endSession();
           close();
           setCheckingOut(false);
         }}

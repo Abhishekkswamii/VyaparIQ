@@ -7,6 +7,12 @@ import { useThemeStore } from "@/store/theme-store";
 import { useCartStore } from "@/store/cart-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
 import { useBudgetStore } from "@/store/budget-store";
+import { formatINR } from "@/lib/format";
+import { useAlerts } from "@/hooks/useAlerts";
+import ToastContainer from "@/components/ui/ToastContainer";
+import CheckoutSummaryModal from "@/components/cart/CheckoutSummaryModal";
+import ScanFab from "@/components/scanner/ScanFab";
+import PennyChatbot from "@/components/chat/PennyChatbot";
 import Sidebar from "./Sidebar";
 import CartBar from "@/components/cart/CartBar";
 import CartDrawer from "@/components/cart/CartDrawer";
@@ -29,6 +35,7 @@ export default function AppLayout() {
   const { pathname } = useLocation();
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { pct, isOverBudget: alertOver } = useAlerts();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -74,7 +81,7 @@ export default function AppLayout() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className={`hidden rounded-full px-3 py-1 text-[11px] font-bold sm:block ${
+                  className={`hidden items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold sm:flex ${
                     isOverBudget
                       ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
                       : remaining / budget < 0.2
@@ -82,9 +89,21 @@ export default function AppLayout() {
                       : "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300"
                   }`}
                 >
+                  {/* Budget Health Indicator dot */}
+                  <span
+                    className={`inline-block h-2 w-2 rounded-full ${
+                      alertOver
+                        ? "bg-red-500 pulse-dot"
+                        : pct > 90
+                        ? "bg-red-500 pulse-dot"
+                        : pct > 70
+                        ? "bg-amber-400"
+                        : "bg-green-500"
+                    }`}
+                  />
                   {isOverBudget
-                    ? `Over ₹${(spent - budget).toFixed(2)}`
-                    : `₹${remaining.toFixed(2)} left`}
+                    ? `Over ${formatINR(spent - budget)}`
+                    : `${formatINR(remaining)} left`}
                 </motion.span>
               )}
             </AnimatePresence>
@@ -134,6 +153,10 @@ export default function AppLayout() {
 
       <CartBar />
       <CartDrawer />
+      <ToastContainer />
+      <CheckoutSummaryModal />
+      <ScanFab />
+      <PennyChatbot />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
+import { formatINR } from "@/lib/format";
 
 export default function CartBar() {
   const items = useCartStore((s) => s.items);
@@ -35,7 +36,7 @@ export default function CartBar() {
                   {count} {count === 1 ? "item" : "items"}
                 </p>
                 <p className="text-lg font-bold text-gray-900 dark:text-white">
-                  ₹{price.toFixed(2)}
+                  {formatINR(price)}
                 </p>
               </div>
             </div>

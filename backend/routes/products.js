@@ -73,4 +73,28 @@ router.get(
   }
 );
 
+// GET /api/products/barcode/:code — look up product by barcode
+router.get("/barcode/:code", async (req, res, next) => {
+  try {
+    const db = req.app.get("db");
+    const { code } = req.params;
+
+    const result = await db.query(
+      `SELECT p.*, ca.name AS cheaper_alternative_name, ca.price AS cheaper_alternative_price
+       FROM products p
+       LEFT JOIN products ca ON ca.id = p.cheaper_alternative_id
+       WHERE p.barcode = $1`,
+      [code]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    res.json({ product: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
