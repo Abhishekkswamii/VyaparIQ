@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Trash2, AlertTriangle, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
 
 export default function CartSummary() {
   const totalItems = useCartStore((s) => s.totalItems);
@@ -11,6 +13,7 @@ export default function CartSummary() {
   const clearCart = useCartStore((s) => s.clearCart);
   const budget = useBudgetStore((s) => s.budget);
   const close = useCartUIStore((s) => s.closeDrawer);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const count = totalItems();
   const price = totalPrice();
@@ -92,9 +95,10 @@ export default function CartSummary() {
           <p className="text-xs font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500">
             Subtotal ({count} {count === 1 ? "item" : "items"})
           </p>
-          <p className="mt-0.5 text-2xl font-extrabold text-gray-900 dark:text-white">
-            ₹{price.toFixed(2)}
-          </p>
+          <AnimatedNumber
+            value={price}
+            className="mt-0.5 text-2xl font-extrabold text-gray-900 dark:text-white"
+          />
         </div>
         <button
           onClick={clearCart}
@@ -105,8 +109,25 @@ export default function CartSummary() {
         </button>
       </div>
 
-      <button className="mt-4 w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-[0.98]">
-        Checkout
+      <button
+        onClick={async () => {
+          setCheckingOut(true);
+          try {
+            await fetch("/api/cart/checkout", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            });
+          } catch {
+            // Optimistic — proceed regardless
+          }
+          clearCart();
+          close();
+          setCheckingOut(false);
+        }}
+        disabled={checkingOut}
+        className="mt-4 w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-[0.98] disabled:opacity-60"
+      >
+        {checkingOut ? "Processing…" : "Checkout"}
       </button>
     </div>
   );

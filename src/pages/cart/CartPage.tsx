@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -12,6 +13,7 @@ import {
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
 import CartItem from "@/components/cart/CartItem";
+import AnimatedNumber from "@/components/ui/AnimatedNumber";
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
@@ -19,6 +21,8 @@ export default function CartPage() {
   const totalPrice = useCartStore((s) => s.totalPrice);
   const clearCart = useCartStore((s) => s.clearCart);
   const budget = useBudgetStore((s) => s.budget);
+
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const count = totalItems();
   const price = totalPrice();
@@ -208,14 +212,31 @@ export default function CartPage() {
               <div className="h-px bg-gray-100 dark:bg-gray-700" />
               <div className="flex items-center justify-between">
                 <span className="font-bold text-gray-900 dark:text-white">Total</span>
-                <span className="text-xl font-extrabold text-gray-900 dark:text-white">
-                  ₹{price.toFixed(2)}
-                </span>
+                <AnimatedNumber
+                  value={price}
+                  className="text-xl font-extrabold text-gray-900 dark:text-white"
+                />
               </div>
             </div>
 
-            <button className="mt-5 w-full rounded-xl bg-orange-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 active:scale-[0.98]">
-              Proceed to Checkout
+            <button
+              onClick={async () => {
+                setCheckingOut(true);
+                try {
+                  await fetch("/api/cart/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                  });
+                } catch {
+                  // Optimistic — proceed regardless
+                }
+                clearCart();
+                setCheckingOut(false);
+              }}
+              disabled={checkingOut}
+              className="mt-5 w-full rounded-xl bg-orange-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 active:scale-[0.98] disabled:opacity-60"
+            >
+              {checkingOut ? "Processing…" : "Proceed to Checkout"}
             </button>
 
             <p className="mt-3 text-center text-xs text-gray-400 dark:text-gray-600">

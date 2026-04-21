@@ -1,49 +1,31 @@
-# 🛒 Smart Cart — Phase 1
+## Ports
 
-AI-powered smart shopping cart application.
+Service                 Internal                External(working ports)
+frontend                5173                    5174
+backend                 5000                    5001
+postgres                5432                    5433
+redis                   6379                    6380
+ai-service              8000                    8002
+nginx                   80                      80
 
-## Quick Start (Docker)
 
-```bash
-docker-compose up --build
-```
+## API ROUTES
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+Method      Endpoint        Auth        Description
+GET         /api/health     No          Health check
+POST        /api/auth/register      No          Register
+POST        /api/auth/login         No          Login
+POST        /api/auth/logout        No          Logout
+GET         /api/products           No          List products
+GET         /api/products/search?q=  No          Search products
+GET         /api/cart               Yes         View cart
+POST        /api/cart               Yes         Add to cart
+DELETE      /api/cart?item_id=      Yes         Remove from cart
+POST        /api/cart/checkout      Yes         Checkout
+GET         /api/budget             Yes         View budget
+PUT         /api/budget             Yes         Set budget
+GET         /api/budget/alerts      Yes         Budget alerts
+GET         /api/sessions           Yes         Shopping history
 
-## Tech Stack
 
-- **React 19** + **Vite 6** — TypeScript SPA
-- **React Router 7** — Client-side routing
-- **Tailwind CSS 3** — Styling
-- **Zustand 5** — State management
-- **Docker** — Containerization
 
-## Project Structure
-
-```
-src/
-├── pages/
-│   ├── shop/ShopPage.tsx          # Product grid + cart bar
-│   └── dashboard/DashboardPage.tsx # Placeholder (Phase 2)
-├── components/
-│   ├── cart/CartBar.tsx            # Fixed bottom cart bar
-│   └── ui/ProductCard.tsx          # Product card component
-├── data/
-│   └── products.ts                # Dummy product catalog
-├── store/
-│   └── cart-store.ts              # Zustand cart state
-├── lib/                           # Utilities (Phase 2+)
-├── App.tsx                        # Router setup
-├── main.tsx                       # Entry point
-└── index.css                      # Tailwind imports
-```
-
-## Routes
-
-- `/` → Redirects to `/shop`
-- `/shop` → Product grid with cart
-- `/dashboard` → Placeholder
-
-## Development
-
-Code changes in `src/` reflect instantly via Docker volume mounts + Vite HMR.

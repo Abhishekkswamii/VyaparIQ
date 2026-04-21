@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { ShoppingCart, Check, Star } from "lucide-react";
+import { useState } from "react";
+import { ShoppingCart, Minus, Plus, Star } from "lucide-react";
 import type { Product } from "@/data/products";
 import { useCartStore } from "@/store/cart-store";
 
@@ -44,15 +44,12 @@ function StarRow({ rating }: { rating: number }) {
 
 export default function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((s) => s.addItem);
-  const [added, setAdded] = useState(false);
+  const items = useCartStore((s) => s.items);
+  const increment = useCartStore((s) => s.incrementQuantity);
+  const decrement = useCartStore((s) => s.decrementQuantity);
   const [imgError, setImgError] = useState(false);
 
-  const handleAdd = useCallback(() => {
-    if (added) return;
-    addItem(product);
-    setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
-  }, [added, addItem, product]);
+  const cartItem = items.find((i) => i.id === product.id);
 
   const discount =
     product.mrp && product.mrp > product.price
@@ -119,27 +116,33 @@ export default function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
-          <button
-            onClick={handleAdd}
-            disabled={added}
-            className={`flex w-full items-center justify-center gap-1.5 rounded py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
-              added
-                ? "border border-green-400 bg-green-50 text-green-700 dark:border-green-700 dark:bg-green-900/30 dark:text-green-400"
-                : "bg-orange-500 text-white hover:bg-orange-600"
-            }`}
-          >
-            {added ? (
-              <>
-                <Check size={15} />
-                Added!
-              </>
-            ) : (
-              <>
-                <ShoppingCart size={15} />
-                Add to Cart
-              </>
-            )}
-          </button>
+          {cartItem ? (
+            <div className="flex w-full items-center justify-between rounded bg-orange-50 px-2 py-1.5 dark:bg-orange-500/10">
+              <button
+                onClick={() => decrement(product.id)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm transition-all hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="min-w-[2rem] text-center text-sm font-bold text-gray-900 dark:text-white">
+                {cartItem.quantity}
+              </span>
+              <button
+                onClick={() => increment(product.id)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm transition-all hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => addItem(product)}
+              className="flex w-full items-center justify-center gap-1.5 rounded bg-orange-500 py-2.5 text-sm font-semibold text-white transition-all hover:bg-orange-600 active:scale-[0.97]"
+            >
+              <ShoppingCart size={15} />
+              Add to Cart
+            </button>
+          )}
         </div>
       </div>
     </div>
