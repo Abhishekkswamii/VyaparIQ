@@ -20,9 +20,18 @@ import CartDrawer from "@/components/cart/CartDrawer";
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Overview",
   "/shop": "Shop",
-  "/cart": "Smart Cart",
+  "/cart": "Cart",
   "/analytics": "Analytics",
+  "/checkout": "Checkout",
+  "/order-success": "Order Confirmed",
+  "/orders": "My Orders",
 };
+
+function resolveTitle(pathname: string): string {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  if (pathname.startsWith("/product/")) return "Product Details";
+  return "VyaparIQ";
+}
 
 export default function AppLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -46,7 +55,7 @@ export default function AppLayout() {
   const hasBudget = budget > 0;
   const isOverBudget = hasBudget && spent > budget;
   const remaining = hasBudget ? budget - spent : 0;
-  const pageTitle = PAGE_TITLES[pathname] ?? "SmartCart AI";
+  const pageTitle = resolveTitle(pathname);
 
   return (
     <div className="flex min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-950 dark:text-gray-100">

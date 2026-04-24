@@ -1,17 +1,34 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ShoppingCart, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"/>
+      <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"/>
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z"/>
+    </svg>
+  );
+}
+
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const login = useAuthStore((s) => s.login);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(
+    searchParams.get("error") === "google_auth_failed"
+      ? "Google sign-in failed. Please try again."
+      : null
+  );
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validate = () => {
@@ -26,15 +43,17 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 900));
-    const name = email.split("@")[0].replace(/[._-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-    login(email, name);
-    navigate("/dashboard");
+    setApiError(null);
+    try {
+      const role = await login(email.trim(), password);
+      navigate(role === "admin" ? "/admin/dashboard" : "/dashboard", { replace: true });
+    } catch (err) {
+      setApiError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const features = [
@@ -58,10 +77,10 @@ export default function LoginPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
               <ShoppingCart size={26} className="text-white" />
             </div>
-            <span className="text-3xl font-extrabold tracking-tight">SmartCart AI</span>
+            <span className="text-3xl font-extrabold tracking-tight">VyaparIQ</span>
           </div>
           <h2 className="text-4xl font-extrabold leading-snug">
-            Shop smarter,<br />spend wiser.
+            Shop smarter.<br />Spend wiser.
           </h2>
           <p className="mt-4 text-lg font-light leading-relaxed text-orange-100">
             Budget-aware shopping that keeps you in control of every rupee — in real time.
@@ -96,13 +115,19 @@ export default function LoginPage() {
           <div className="mb-8">
             <div className="mb-5 flex items-center gap-2 lg:hidden">
               <ShoppingCart size={26} className="text-orange-500" />
-              <span className="text-xl font-extrabold text-gray-900 dark:text-white">SmartCart AI</span>
+              <span className="text-xl font-extrabold text-gray-900 dark:text-white">VyaparIQ</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Welcome back</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Welcome to VyaparIQ</h1>
             <p className="mt-2 text-gray-500 dark:text-gray-400">Sign in to your account to continue</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {apiError && (
+              <div className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                <AlertCircle size={15} className="shrink-0" />
+                {apiError}
+              </div>
+            )}
             {/* Email */}
             <div>
               <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -200,14 +225,28 @@ export default function LoginPage() {
             Don't have an account?{" "}
             <Link
               to="/signup"
-              className="font-semibold text-orange-500 transition-colors hover:text-orange-600 hover:underline text-orange-400"
+              className="font-semibold text-orange-500 transition-colors hover:text-orange-600 hover:underline"
             >
               Create one free
             </Link>
           </p>
 
-          <p className="mt-4 text-center text-xs text-gray-400 dark:text-gray-600">
-            Demo: any valid email + 6+ char password
+          <div className="relative my-5 flex items-center">
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800" />
+            <span className="mx-3 text-xs font-medium text-gray-400">or</span>
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800" />
+          </div>
+
+          <a
+            href="http://localhost:5001/api/auth/google"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+          >
+            <GoogleIcon />
+            Continue with Google
+          </a>
+
+          <p className="mt-5 text-center text-xs text-gray-400 dark:text-gray-600">
+            VyaparIQ · Shop smarter. Spend wiser.
           </p>
         </motion.div>
       </div>

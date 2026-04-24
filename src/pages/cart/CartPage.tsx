@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
@@ -16,11 +15,11 @@ import CartItem from "@/components/cart/CartItem";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import SmartSuggestions from "@/components/cart/SmartSuggestions";
 import { formatINR } from "@/lib/format";
-import { useSessionStore } from "@/store/session-store";
 import PredictiveBanner from "@/components/cart/PredictiveBanner";
 import FamilyPanel from "@/components/family/FamilyPanel";
 import OffersPanel from "@/components/cart/OffersPanel";
 import BudgetOptimizer from "@/components/cart/BudgetOptimizer";
+import CartOptimizer from "@/components/cart/CartOptimizer";
 import { useOffersStore, calculateDiscount } from "@/store/offers-store";
 
 export default function CartPage() {
@@ -30,9 +29,7 @@ export default function CartPage() {
   const clearCart = useCartStore((s) => s.clearCart);
   const budget = useBudgetStore((s) => s.budget);
 
-  const endSession = useSessionStore((s) => s.endSession);
   const getAppliedOffer = useOffersStore((s) => s.getAppliedOffer);
-  const [checkingOut, setCheckingOut] = useState(false);
 
   const count = totalItems();
   const price = totalPrice();
@@ -147,6 +144,7 @@ export default function CartPage() {
             Continue shopping
           </Link>
 
+          <CartOptimizer />
           <SmartSuggestions />
           <BudgetOptimizer />
         </div>
@@ -255,17 +253,12 @@ export default function CartPage() {
               </div>
             </div>
 
-            <button
-              onClick={async () => {
-                setCheckingOut(true);
-                await endSession();
-                setCheckingOut(false);
-              }}
-              disabled={checkingOut}
-              className="mt-5 w-full rounded-xl bg-orange-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 active:scale-[0.98] disabled:opacity-60"
+            <Link
+              to="/checkout"
+              className="mt-5 block w-full rounded-xl bg-orange-600 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 active:scale-[0.98]"
             >
-              {checkingOut ? "Processing…" : "Proceed to Checkout"}
-            </button>
+              Proceed to Checkout
+            </Link>
 
             <p className="mt-3 text-center text-xs text-gray-400 dark:text-gray-600">
               🔒 Secure &amp; encrypted checkout

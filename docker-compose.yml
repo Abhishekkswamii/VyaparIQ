@@ -39,6 +39,11 @@ services:
       - REDIS_URL=redis://redis:6379
       - AI_SERVICE_URL=http://ai-service:8000
       - JWT_SECRET=${JWT_SECRET:-change_me_in_production}
+      - SESSION_SECRET=${SESSION_SECRET:-change_me_in_production}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5174}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:5001/api/auth/google/callback}
     depends_on:
       postgres:
         condition: service_healthy

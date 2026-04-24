@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ShoppingCart, Minus, Plus, Star, Lightbulb } from "lucide-react";
 import type { Product } from "@/data/products";
 import { products } from "@/data/products";
@@ -76,7 +77,7 @@ export default function ProductCard({ product }: { product: Product }) {
       onMouseEnter={() => addRecentView(product.id)}
     >
       {/* Image area */}
-      <div className={`relative overflow-hidden ${fallbackBg}`}>
+      <Link to={`/product/${product.id}`} className={`relative block overflow-hidden ${fallbackBg}`}>
         {product.badge && (
           <span
             className={`absolute left-2 top-2 z-10 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${BADGE_COLORS[product.badge] ?? "bg-gray-500"}`}
@@ -97,16 +98,18 @@ export default function ProductCard({ product }: { product: Product }) {
             🛒
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Details */}
       <div className="flex flex-1 flex-col p-3">
         <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-orange-500">
           {product.category}
         </span>
-        <h3 className="mb-1.5 line-clamp-2 text-sm font-semibold leading-snug text-gray-800 dark:text-gray-100">
-          {product.name}
-        </h3>
+        <Link to={`/product/${product.id}`}>
+          <h3 className="mb-1.5 line-clamp-2 text-sm font-semibold leading-snug text-gray-800 hover:text-orange-600 dark:text-gray-100 dark:hover:text-orange-400">
+            {product.name}
+          </h3>
+        </Link>
 
         {product.rating !== undefined && (
           <div className="mb-2 flex flex-wrap items-center gap-1.5">
@@ -145,6 +148,7 @@ export default function ProductCard({ product }: { product: Product }) {
             <div className="flex w-full items-center justify-between rounded bg-orange-50 px-2 py-1.5 dark:bg-orange-500/10">
               <button
                 onClick={() => decrement(product.id)}
+                aria-label="Decrease quantity"
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm transition-all hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700"
               >
                 <Minus size={14} />
@@ -154,6 +158,7 @@ export default function ProductCard({ product }: { product: Product }) {
               </span>
               <button
                 onClick={() => increment(product.id)}
+                aria-label="Increase quantity"
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm transition-all hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400 dark:hover:bg-gray-700"
               >
                 <Plus size={14} />

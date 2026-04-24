@@ -1,18 +1,50 @@
 const express = require("express");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const passport = require("passport");
 const { body, validationResult } = require("express-validator");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "change_me_in_production";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5174";
 const SALT_ROUNDS = 10;
 
-// POST /api/auth/register
+// ── Helper ────────────────────────────────────────────────────────────────────
+
+function makeToken(user) {
+  return jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      provider: user.provider || "local",
+    },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+}
+
+function userPayload(user) {
+  return {
+    id: user.id,
+    firstName: user.first_name,
+    lastName: user.last_name,
+    email: user.email,
+    role: user.role,
+    provider: user.provider || "local",
+  };
+}
+
+// ── POST /api/auth/register ───────────────────────────────────────────────────
+
 router.post(
   "/register",
   [
-    body("name").trim().notEmpty().withMessage("Name is required"),
-    body("email").isEmail().withMessage("Valid email is required"),
+    body("firstName").trim().notEmpty().withMessage("First name is required"),
+    body("lastName").trim().notEmpty().withMessage("Last name is required"),
+    body("email").isEmail().normalizeEmail().withMessage("Valid email is required"),
     body("password")
       .isLength({ min: 6 })
       .withMessage("Password must be at least 6 characters"),
@@ -25,7 +57,7 @@ router.post(
       }
 
       const db = req.app.get("db");
-      const { name, email, password } = req.body;
+      const { firstName, lastName, email, password } = req.body;
 
       const existing = await db.query(
         "SELECT id FROM users WHERE email = $1",
@@ -37,27 +69,27 @@ router.post(
 
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
       const result = await db.query(
-        "INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, created_at",
-        [name, email, hashedPassword]
+        `INSERT INTO users (name, first_name, last_name, email, password_hash, provider, role)
+           VALUES ($1, $2, $3, $4, $5, 'local', 'user')
+         RETURNING id, first_name, last_name, email, role, provider`,
+        [`${firstName} ${lastName}`.trim(), firstName, lastName, email, hashedPassword]
       );
 
       const user = result.rows[0];
-      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-        expiresIn: "7d",
-      });
-
-      res.status(201).json({ user, token });
+      const token = makeToken(user);
+      res.status(201).json({ user: userPayload(user), token });
     } catch (err) {
       next(err);
     }
   }
 );
 
-// POST /api/auth/login
+// ── POST /api/auth/login ──────────────────────────────────────────────────────
+
 router.post(
   "/login",
   [
-    body("email").isEmail().withMessage("Valid email is required"),
+    body("email").isEmail().normalizeEmail().withMessage("Valid email is required"),
     body("password").notEmpty().withMessage("Password is required"),
   ],
   async (req, res, next) => {
@@ -71,34 +103,70 @@ router.post(
       const { email, password } = req.body;
 
       const result = await db.query(
-        "SELECT id, name, email, password_hash FROM users WHERE email = $1",
+        `SELECT id, first_name, last_name, email, role, provider, password_hash
+           FROM users WHERE email = $1`,
         [email]
       );
+
       if (result.rows.length === 0) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
       const user = result.rows[0];
+
+      if (user.provider !== "local" || !user.password_hash) {
+        return res.status(400).json({
+          error: "This account uses Google sign-in. Please continue with Google.",
+        });
+      }
+
       const valid = await bcrypt.compare(password, user.password_hash);
       if (!valid) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-        expiresIn: "7d",
-      });
-
-      res.json({
-        user: { id: user.id, name: user.name, email: user.email },
-        token,
-      });
+      const token = makeToken(user);
+      res.json({ user: userPayload(user), token });
     } catch (err) {
       next(err);
     }
   }
 );
 
-// POST /api/auth/logout
+// ── GET /api/auth/google ──────────────────────────────────────────────────────
+
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+// ── GET /api/auth/google/callback ─────────────────────────────────────────────
+
+router.get(
+  "/google/callback",
+  (req, res, next) => {
+    console.log("[OAuth] Callback hit — query:", req.query);
+    console.log("[OAuth] Session:", req.session);
+    next();
+  },
+  passport.authenticate("google", {
+    failureRedirect: `${FRONTEND_URL}/login?error=google_auth_failed`,
+    failureMessage: true,
+  }),
+  (req, res) => {
+    console.log("[OAuth] req.user:", req.user);
+    if (!req.user) {
+      console.error("[OAuth] No user on req after authenticate");
+      return res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
+    }
+    const token = makeToken(req.user);
+    console.log("[OAuth] Token generated, redirecting to frontend");
+    res.redirect(`${FRONTEND_URL}/oauth-success?token=${token}`);
+  }
+);
+
+// ── POST /api/auth/logout ─────────────────────────────────────────────────────
+
 router.post("/logout", async (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];
@@ -106,12 +174,11 @@ router.post("/logout", async (req, res, next) => {
 
     if (token) {
       const redis = req.app.get("redis");
-      // Blacklist the token until it expires
       const decoded = jwt.decode(token);
-      const ttl = decoded.exp ? decoded.exp - Math.floor(Date.now() / 1000) : 0;
-      if (ttl > 0) {
-        await redis.set(`bl:${token}`, "1", "EX", ttl);
-      }
+      const ttl = decoded?.exp
+        ? decoded.exp - Math.floor(Date.now() / 1000)
+        : 0;
+      if (ttl > 0) await redis.set(`bl:${token}`, "1", "EX", ttl);
     }
 
     res.json({ message: "Logged out successfully" });

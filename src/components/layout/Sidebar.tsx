@@ -5,6 +5,7 @@ import {
   ShoppingBag,
   ShoppingCart,
   BarChart3,
+  Package,
   LogOut,
   X,
 } from "lucide-react";
@@ -19,8 +20,9 @@ interface SidebarProps {
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/shop", label: "Shop", icon: ShoppingBag },
-  { to: "/cart", label: "Smart Cart", icon: ShoppingCart, showBadge: true },
+  { to: "/cart", label: "Cart", icon: ShoppingCart, showBadge: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/orders", label: "My Orders", icon: Package },
 ];
 
 function SidebarInner({ closeMobile }: { closeMobile: () => void }) {
@@ -36,13 +38,15 @@ function SidebarInner({ closeMobile }: { closeMobile: () => void }) {
     navigate("/login");
   };
 
-  const initials = user?.name
-    ? user.name
-        .split(" ")
-        .slice(0, 2)
+  const displayName = user
+    ? `${user.firstName} ${user.lastName}`.trim() || user.email
+    : "User";
+  const initials = user
+    ? [user.firstName, user.lastName]
+        .filter(Boolean)
         .map((w) => w[0])
         .join("")
-        .toUpperCase()
+        .toUpperCase() || "U"
     : "U";
 
   return (
@@ -53,7 +57,7 @@ function SidebarInner({ closeMobile }: { closeMobile: () => void }) {
           <ShoppingBag size={18} className="text-white" />
         </div>
         <span className="text-lg font-extrabold tracking-tight text-white">
-          SmartCart <span className="font-light opacity-80">AI</span>
+          VyaparIQ
         </span>
       </div>
 
@@ -112,7 +116,7 @@ function SidebarInner({ closeMobile }: { closeMobile: () => void }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {user?.name ?? "User"}
+              {displayName}
             </p>
             <p className="truncate text-xs text-gray-400 dark:text-gray-500">
               {user?.email ?? ""}
@@ -164,6 +168,7 @@ export default function Sidebar({ isMobileOpen, closeMobile }: SidebarProps) {
             >
               <button
                 onClick={closeMobile}
+                aria-label="Close menu"
                 className="absolute right-3 top-3.5 flex h-9 w-9 items-center justify-center rounded-xl text-gray-400 transition-colors hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-gray-800"
               >
                 <X size={18} />

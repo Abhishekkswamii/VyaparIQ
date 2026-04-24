@@ -1,11 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, User, ShoppingCart, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, ShoppingCart, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z"/>
+      <path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z"/>
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 6.29C4.672 4.163 6.656 3.58 9 3.58Z"/>
+    </svg>
+  );
+}
+
 interface FormErrors {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   password?: string;
   confirm?: string;
@@ -13,20 +25,23 @@ interface FormErrors {
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const signup = useAuthStore((s) => s.signup);
 
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validate = (): FormErrors => {
     const errs: FormErrors = {};
-    if (!name.trim()) errs.name = "Name is required";
+    if (!firstName.trim()) errs.firstName = "First name is required";
+    if (!lastName.trim()) errs.lastName = "Last name is required";
     if (!email) errs.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(email)) errs.email = "Enter a valid email";
     if (!password) errs.password = "Password is required";
@@ -39,14 +54,17 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     setLoading(true);
-    await new Promise((res) => setTimeout(res, 900));
-    login(email, name.trim());
-    navigate("/dashboard");
+    setApiError(null);
+    try {
+      await signup(firstName.trim(), lastName.trim(), email.trim(), password);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setApiError((err as Error).message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const clearError = (field: keyof FormErrors) =>
@@ -91,7 +109,7 @@ export default function SignupPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
               <ShoppingCart size={26} className="text-white" />
             </div>
-            <span className="text-3xl font-extrabold tracking-tight">SmartCart AI</span>
+            <span className="text-3xl font-extrabold tracking-tight">VyaparIQ</span>
           </div>
           <h2 className="text-4xl font-extrabold leading-snug">
             Join thousands of<br />smart shoppers.
@@ -130,37 +148,63 @@ export default function SignupPage() {
           <div className="mb-8">
             <div className="mb-5 flex items-center gap-2 lg:hidden">
               <ShoppingCart size={26} className="text-orange-500" />
-              <span className="text-xl font-extrabold text-gray-900 dark:text-white">SmartCart AI</span>
+              <span className="text-xl font-extrabold text-gray-900 dark:text-white">VyaparIQ</span>
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Create account</h1>
             <p className="mt-2 text-gray-500 dark:text-gray-400">Start your smart shopping journey</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Name */}
-            <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Full name
-              </label>
-              <div className="relative">
-                <User size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            {apiError && (
+              <div className="flex items-center gap-2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                <AlertCircle size={15} className="shrink-0" />
+                {apiError}
+              </div>
+            )}
+            {/* First Name + Last Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  First name
+                </label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); clearError("name"); }}
-                  placeholder="Alex Johnson"
-                  className={`w-full rounded-xl border bg-white py-3 pl-10 pr-4 text-sm font-medium text-gray-900 outline-none transition-all placeholder:text-gray-400 dark:bg-gray-900 dark:text-white ${
-                    errors.name
+                  value={firstName}
+                  onChange={(e) => { setFirstName(e.target.value); clearError("firstName"); }}
+                  placeholder="Alex"
+                  className={`w-full rounded-xl border bg-white py-3 px-4 text-sm font-medium text-gray-900 outline-none transition-all placeholder:text-gray-400 dark:bg-gray-900 dark:text-white ${
+                    errors.firstName
                       ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
                       : "border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-gray-700"
                   }`}
                 />
+                {errors.firstName && (
+                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-red-500">
+                    <AlertCircle size={12} />{errors.firstName}
+                  </p>
+                )}
               </div>
-              {errors.name && (
-                <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-red-500">
-                  <AlertCircle size={12} />{errors.name}
-                </p>
-              )}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Last name
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => { setLastName(e.target.value); clearError("lastName"); }}
+                  placeholder="Johnson"
+                  className={`w-full rounded-xl border bg-white py-3 px-4 text-sm font-medium text-gray-900 outline-none transition-all placeholder:text-gray-400 dark:bg-gray-900 dark:text-white ${
+                    errors.lastName
+                      ? "border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                      : "border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-gray-700"
+                  }`}
+                />
+                {errors.lastName && (
+                  <p className="mt-1 flex items-center gap-1 text-xs font-medium text-red-500">
+                    <AlertCircle size={12} />{errors.lastName}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Email */}
@@ -280,11 +324,25 @@ export default function SignupPage() {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-semibold text-orange-500 transition-colors hover:text-orange-600 hover:underline text-orange-400"
+              className="font-semibold text-orange-500 transition-colors hover:text-orange-600 hover:underline"
             >
               Sign in
             </Link>
           </p>
+
+          <div className="relative my-5 flex items-center">
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800" />
+            <span className="mx-3 text-xs font-medium text-gray-400">or</span>
+            <div className="flex-grow border-t border-gray-200 dark:border-gray-800" />
+          </div>
+
+          <a
+            href="http://localhost:5001/api/auth/google"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+          >
+            <GoogleIcon />
+            Sign up with Google
+          </a>
         </motion.div>
       </div>
     </div>

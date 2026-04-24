@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Smart Cart</title>
+    <title>VyaparIQ</title>
     <script>
       (function () {
         try {
-          var theme = localStorage.getItem("smartcart-theme");
+          var theme = localStorage.getItem("smartcart-theme") || localStorage.getItem("vyapariq-theme");
           if (theme === "dark") document.documentElement.classList.add("dark");
         } catch (e) {}
       })();

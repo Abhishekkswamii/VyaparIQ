@@ -19,4 +19,18 @@ function authenticateToken(req, res, next) {
   }
 }
 
-module.exports = { authenticateToken };
+/**
+ * Factory: requireRole("admin") — use after authenticateToken.
+ * Returns 403 if req.user.role doesn't match.
+ */
+function requireRole(role) {
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ error: "Authentication required" });
+    if (req.user.role !== role) {
+      return res.status(403).json({ error: `${role} access required` });
+    }
+    next();
+  };
+}
+
+module.exports = { authenticateToken, requireRole };

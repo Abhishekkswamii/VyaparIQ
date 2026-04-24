@@ -40,7 +40,7 @@ export default function Navbar() {
         <Link to="/shop" className="flex items-center gap-2">
           <span className="text-2xl">🛒</span>
           <span className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            SmartCart
+            VyaparIQ
           </span>
         </Link>
 
