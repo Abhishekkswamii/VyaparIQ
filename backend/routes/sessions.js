@@ -69,7 +69,7 @@ router.post("/start", async (req, res, next) => {
       await redis.set(
         `session:active:${req.user.id}`,
         JSON.stringify({ id: session.id, started_at: session.started_at }),
-        { EX: 86400 } // 24h expiry
+        "EX", 86400
       );
     }
 
@@ -123,12 +123,13 @@ router.post("/end", async (req, res, next) => {
       [totalSpent, items.length, savingsAchieved, JSON.stringify(items), sessionId]
     );
 
-    // Log individual expense items
     for (const item of items) {
+      const pid = parseInt(item.productId || item.product_id, 10);
+      if (!Number.isFinite(pid) || pid <= 0) continue;
       await db.query(
         `INSERT INTO expense_logs (user_id, session_id, product_id, quantity, amount)
          VALUES ($1, $2, $3, $4, $5)`,
-        [req.user.id, sessionId, item.productId || 0, item.quantity || 1, item.amount || 0]
+        [req.user.id, sessionId, pid, item.quantity || 1, item.amount || 0]
       );
     }
 

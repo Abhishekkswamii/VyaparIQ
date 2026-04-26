@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { useOutletContext, Link } from "react-router-dom";
+import type { AppOutletCtx } from "@/components/layout/AppLayout";
 import { motion } from "framer-motion";
-import { ArrowRight, Flame, Wallet, Star, RefreshCw } from "lucide-react";
-import { products } from "@/data/products";
+import { ArrowRight, Flame, Wallet, Star } from "lucide-react";
+import type { Product } from "@/data/products";
+import { useProductStore } from "@/store/product-store";
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
+import { useBudgetSummary } from "@/hooks/useBudgetSummary";
 import { formatINR } from "@/lib/format";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductSkeleton from "@/components/ui/ProductSkeleton";
@@ -15,15 +18,10 @@ import type { CategoryId } from "@/components/layout/CategoryBar";
 const CATEGORY_MAP: Record<CategoryId, string[]> = {
   All: [],
   Grocery: ["Fruits", "Vegetables", "Dairy", "Bakery", "Meat", "Grains", "Pantry", "Beverages"],
-  Electronics: [],
-  Fashion: [],
+  Electronics: ["Electronics"],
+  Fashion: ["Fashion"],
   "Budget Deals": [],
 };
-
-interface OutletCtx {
-  searchQuery: string;
-  activeCategory: CategoryId;
-}
 
 function SectionHeader({ icon, title, to }: { icon: React.ReactNode; title: string; to?: string }) {
   return (
@@ -44,11 +42,11 @@ function SectionHeader({ icon, title, to }: { icon: React.ReactNode; title: stri
   );
 }
 
-function ProductGrid({ items, loading }: { items: typeof products; loading: boolean }) {
+function ProductGrid({ items, loading }: { items: Product[]; loading: boolean }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
+      <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(160px,1fr))]">
+        {Array.from({ length: 10 }).map((_, i) => (
           <ProductSkeleton key={i} />
         ))}
       </div>
@@ -63,13 +61,14 @@ function ProductGrid({ items, loading }: { items: typeof products; loading: bool
     );
   }
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(160px,1fr))]">
       {items.map((p, i) => (
         <motion.div
           key={p.id}
+          className="h-full"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: i * 0.05 }}
+          transition={{ duration: 0.3, delay: Math.min(i * 0.04, 0.4) }}
         >
           <ProductCard product={p} />
         </motion.div>
@@ -79,28 +78,17 @@ function ProductGrid({ items, loading }: { items: typeof products; loading: bool
 }
 
 export default function DashboardPage() {
-  const { searchQuery, activeCategory } = useOutletContext<OutletCtx>();
-  const budget = useBudgetStore((s) => s.budget);
+  const { products, loading, fetch: fetchProducts } = useProductStore();
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+  const { searchQuery, activeCategory } = useOutletContext<AppOutletCtx>();
   const setBudget = useBudgetStore((s) => s.setBudget);
-  const clearBudget = useBudgetStore((s) => s.clearBudget);
-  const items = useCartStore((s) => s.items);
-  const totalPrice = useCartStore((s) => s.totalPrice);
-  const [loading, setLoading] = useState(true);
-  const [inputVal, setInputVal] = useState(budget > 0 ? String(budget) : "");
-  const [editing, setEditing] = useState(false);
-
-  const hasBudget = budget > 0;
-  const spent = totalPrice();
-
-  // Brief shimmer on mount
-  useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 700);
-    return () => clearTimeout(t);
-  }, []);
+  const { totalSpent: spent, hasBudget } = useBudgetSummary();
+  const itemCount = useCartStore((s) => s.itemCount);
+  const [inputVal, setInputVal] = useState("");
 
   const saveBudget = () => {
     const v = parseFloat(inputVal);
-    if (!isNaN(v) && v > 0) { setBudget(v); setEditing(false); }
+    if (!isNaN(v) && v > 0) setBudget(v);
   };
 
   // Filter by category
@@ -120,7 +108,17 @@ export default function DashboardPage() {
     : categoryFiltered;
 
   // Product section slices
-  const recommended = [...filtered].filter(p => (p.rating ?? 0) >= 4.4).sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 10);
+  const recommendedRated = [...filtered]
+    .filter((p) => (p.rating ?? 0) >= 4.4)
+    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+  const recommendedFallback = [...products]
+    .sort((a, b) => {
+      const reviewDiff = (b.reviews ?? 0) - (a.reviews ?? 0);
+      if (reviewDiff !== 0) return reviewDiff;
+      return a.price - b.price;
+    });
+  const recommendedSource = recommendedRated.length > 0 ? recommendedRated : recommendedFallback;
+  const recommended = recommendedSource.slice(0, 10);
   const budgetFriendly = [...filtered].filter(p => p.price <= 100 || (p.mrp && Math.round(((p.mrp - p.price) / p.mrp) * 100) >= 18)).sort((a, b) => a.price - b.price).slice(0, 10);
   const popular = [...filtered].sort((a, b) => (b.reviews ?? 0) - (a.reviews ?? 0)).slice(0, 10);
 
@@ -128,7 +126,7 @@ export default function DashboardPage() {
   const isCategoryFiltered = activeCategory !== "All";
 
   // ── No budget set ──
-  if (!hasBudget && !editing) {
+  if (!hasBudget) {
     return (
       <div className="flex flex-1 items-center justify-center px-5 py-12 lg:py-24">
         <motion.div
@@ -159,7 +157,7 @@ export default function DashboardPage() {
             </button>
           </div>
           <div className="mt-8 flex flex-col items-center gap-4 border-t border-gray-100 pt-8 dark:border-gray-800">
-            {items.length > 0 && (
+            {itemCount > 0 && (
               <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
                 Current cart: <span className="font-bold">{formatINR(spent)}</span>
               </p>
@@ -173,57 +171,8 @@ export default function DashboardPage() {
     );
   }
 
-  // ── Edit budget inline ──
-  if (editing) {
-    return (
-      <div className="mx-auto flex max-w-[1440px] flex-1 items-center justify-center px-5 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-xl rounded-2xl border-2 border-orange-200 bg-orange-50 p-8 dark:border-orange-800/40 dark:bg-orange-500/10"
-        >
-          <p className="mb-4 text-lg font-bold text-orange-800 dark:text-orange-300 text-center">Update Your Shopping Budget</p>
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-gray-400">₹</span>
-              <input
-                autoFocus type="number" min="0" value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && saveBudget()}
-                className="h-12 w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 text-lg font-bold text-gray-900 outline-none focus:border-orange-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-              />
-            </div>
-            <button onClick={saveBudget} className="h-12 rounded-xl bg-orange-600 px-6 font-bold text-white hover:bg-orange-700">Save</button>
-            <button onClick={() => setEditing(false)} className="h-12 rounded-xl px-4 font-bold text-gray-500 hover:bg-gray-200/50 dark:hover:bg-gray-800">Cancel</button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto w-full max-w-[1440px] px-4 py-6 pb-28 sm:px-6 lg:px-8">
-      {/* Budget edit bar */}
-      <div className="mb-6 flex items-center justify-between">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Budget: <span className="font-bold text-gray-900 dark:text-white">{formatINR(budget)}</span>
-          {spent > 0 && <span className="ml-2 text-orange-500">· {formatINR(spent)} spent</span>}
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => { setEditing(true); setInputVal(String(budget)); }}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-orange-50 hover:text-orange-600 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-800"
-          >
-            <RefreshCw size={12} /> Edit Budget
-          </button>
-          <button
-            onClick={() => { clearBudget(); setInputVal(""); }}
-            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 dark:border-gray-700 dark:hover:bg-red-900/20"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
 
       {/* ── Search / category results ── */}
       {(isSearching || isCategoryFiltered) ? (

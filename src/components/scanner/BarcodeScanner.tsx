@@ -3,15 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Camera, X, CheckCircle2, Keyboard, ChevronDown } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import { useCartStore } from "@/store/cart-store";
-import { products } from "@/data/products";
-
-const BARCODE_MAP = Object.fromEntries(
-  products.filter((p) => p.barcode).map((p) => [p.barcode!, p])
-);
-
-const SAMPLE_BARCODES = products
-  .filter((p) => p.barcode)
-  .map((p) => ({ code: p.barcode!, name: p.name }));
+import { useProductStore } from "@/store/product-store";
 
 type Mode = "camera" | "simulate";
 
@@ -23,6 +15,13 @@ export default function BarcodeScanner({
   onClose: () => void;
 }) {
   const addItem = useCartStore((s) => s.addItem);
+  const storeProducts = useProductStore((s) => s.products);
+  const BARCODE_MAP = Object.fromEntries(
+    storeProducts.filter((p) => p.barcode).map((p) => [p.barcode!, p])
+  );
+  const SAMPLE_BARCODES = storeProducts
+    .filter((p) => p.barcode)
+    .map((p) => ({ code: p.barcode!, name: p.name }));
   const [mode, setMode] = useState<Mode>("simulate");
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [simInput, setSimInput] = useState("");
@@ -95,16 +94,17 @@ export default function BarcodeScanner({
   const handleSimulate = (code: string) => {
     setScanning(true);
     setSimProgress(0);
+    let progress = 0;
     const interval = setInterval(() => {
-      setSimProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setScanning(false);
-          handleBarcode(code);
-          return 0;
-        }
-        return p + 5;
-      });
+      progress += 5;
+      if (progress >= 100) {
+        clearInterval(interval);
+        setScanning(false);
+        setSimProgress(0);
+        handleBarcode(code);
+      } else {
+        setSimProgress(progress);
+      }
     }, 40);
   };
 
@@ -144,6 +144,7 @@ export default function BarcodeScanner({
               </button>
               <button
                 onClick={onClose}
+                aria-label="Close scanner"
                 className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 <X size={16} />

@@ -7,3 +7,4 @@ export const APP_TAGLINE = "Shop smarter. Spend wiser.";
 export const APP_DOMAIN = "vyapariq.com";
 export const APP_EMAIL = "hello@vyapariq.com";
 export const APP_SUPPORT_EMAIL = "support@vyapariq.com";
+export const ASSISTANT_NAME = "Vyra";

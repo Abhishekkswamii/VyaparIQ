@@ -72,12 +72,13 @@ export default function CartDrawer() {
                     Start adding items to see them here!
                   </p>
                 </div>
-                <button
+                <Link
+                  to="/dashboard"
                   onClick={close}
                   className="mt-2 rounded-xl bg-orange-500 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 hover:bg-orange-600"
                 >
                   Continue Shopping
-                </button>
+                </Link>
               </div>
             ) : (
               <>

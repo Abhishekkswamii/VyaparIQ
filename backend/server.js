@@ -10,6 +10,7 @@ const passport = require("passport");
 const { Pool } = require("pg");
 const Redis = require("ioredis");
 const { configurePassport } = require("./config/passport");
+const rateLimit = require("express-rate-limit");
 
 const authRoutes = require("./routes/auth");
 const cartRoutes = require("./routes/cart");
@@ -19,7 +20,9 @@ const chatAgentRoutes = require("./routes/chatAgent");
 const visionProductRoutes = require("./routes/visionProduct");
 const sessionRoutes = require("./routes/sessions");
 const orderRoutes  = require("./routes/orders");
-const adminRoutes  = require("./routes/admin");
+const adminRoutes   = require("./routes/admin");
+const profileRoutes = require("./routes/profile");
+const invoiceRoutes = require("./routes/invoices");
 
 // ── Startup: validate required environment variables ─────────────
 function validateEnv() {
@@ -57,7 +60,35 @@ if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// ── Middleware ────────────────────────────────────────────────────
+// ── Rate Limiters ────────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 min
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests — please try again later." },
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 min
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests — please try again later." },
+});
+
+const agentLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 min
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Vyra rate limit reached — please wait a moment." },
+});
+
+// ── Trust proxy (Cloud Run / Firebase load balancer sets X-Forwarded-For) ────
+app.set("trust proxy", 1);
+
+// ── Middleware ────────────────────────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(
   cors({
@@ -114,15 +145,17 @@ app.get("/api/health", async (_req, res) => {
   }
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/cart", cartRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/budget", budgetRoutes);
-app.use("/api/chat-agent", chatAgentRoutes);
-app.use("/api/vision-product", visionProductRoutes);
-app.use("/api/sessions", sessionRoutes);
-app.use("/api/orders",  orderRoutes);
-app.use("/api/admin",   adminRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/cart", apiLimiter, cartRoutes);
+app.use("/api/products", apiLimiter, productRoutes);
+app.use("/api/budget", apiLimiter, budgetRoutes);
+app.use("/api/chat-agent", agentLimiter, chatAgentRoutes);
+app.use("/api/vision-product", agentLimiter, visionProductRoutes);
+app.use("/api/sessions", apiLimiter, sessionRoutes);
+app.use("/api/orders",  apiLimiter, orderRoutes);
+app.use("/api/admin",    apiLimiter, adminRoutes);
+app.use("/api/profile",  apiLimiter, profileRoutes);
+app.use("/api/invoices", apiLimiter, invoiceRoutes);
 
 // ── Global Error Handler ─────────────────────────────────────────
 // Catches anything passed to next(err) and always returns JSON
@@ -135,9 +168,36 @@ app.use((err, _req, res, _next) => {
 
 const { APP_NAME } = require("./config/branding");
 
+// ── Startup migration ─────────────────────────────────────────────
+async function runMigrations(db) {
+  try {
+    await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50) DEFAULT 'cod'`);
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS invoices (
+        id             SERIAL PRIMARY KEY,
+        invoice_id     VARCHAR(50) UNIQUE NOT NULL,
+        order_id       INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        user_id        INTEGER NOT NULL REFERENCES users(id),
+        invoice_url    TEXT,
+        storage_path   TEXT,
+        file_size      INTEGER,
+        invoice_status VARCHAR(20) NOT NULL DEFAULT 'generated',
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_invoices_order_id ON invoices(order_id)`);
+    await db.query(`CREATE INDEX IF NOT EXISTS idx_invoices_user_id  ON invoices(user_id)`);
+    console.log("✓ Migrations applied (06-invoices)");
+  } catch (err) {
+    console.error("⚠️  Migration warning (non-fatal):", err.message);
+  }
+}
+
 // ── Start ────────────────────────────────────────────────────────
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, "0.0.0.0", async () => {
   console.log(`${APP_NAME} backend running on port ${PORT}`);
+  const db = app.get("db");
+  if (db) await runMigrations(db);
 });
 
 module.exports = app;

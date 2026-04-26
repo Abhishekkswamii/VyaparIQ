@@ -1,30 +1,18 @@
-import { useState } from "react";
 import { Trash2, AlertTriangle, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useCartStore } from "@/store/cart-store";
-import { useBudgetStore } from "@/store/budget-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
+import { useBudgetSummary } from "@/hooks/useBudgetSummary";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import { formatINR } from "@/lib/format";
-import { useSessionStore } from "@/store/session-store";
 
 export default function CartSummary() {
-  const totalItems = useCartStore((s) => s.totalItems);
-  const totalPrice = useCartStore((s) => s.totalPrice);
+  const count = useCartStore((s) => s.itemCount);
+  const price = useCartStore((s) => s.totalAmount);
   const clearCart = useCartStore((s) => s.clearCart);
-  const budget = useBudgetStore((s) => s.budget);
   const close = useCartUIStore((s) => s.closeDrawer);
-  const endSession = useSessionStore((s) => s.endSession);
-  const [checkingOut, setCheckingOut] = useState(false);
-
-  const count = totalItems();
-  const price = totalPrice();
-  const hasBudget = budget > 0;
-  const isOverBudget = hasBudget && price > budget;
-  const remaining = hasBudget ? budget - price : 0;
-  const pct = hasBudget ? Math.min((price / budget) * 100, 100) : 0;
-
+  const { totalBudget: budget, remainingBudget: remaining, usedPercentage: pct, hasBudget, isOverBudget } = useBudgetSummary();
   return (
     <div className="border-t border-gray-100 bg-white px-5 pb-6 pt-4 dark:border-gray-800 dark:bg-gray-900">
       {/* Budget progress */}
@@ -113,25 +101,12 @@ export default function CartSummary() {
       </div>
 
       <div className="mt-4 flex flex-col gap-2">
-        <button
-          onClick={async () => {
-            setCheckingOut(true);
-            await endSession();
-            close();
-            setCheckingOut(false);
-          }}
-          disabled={checkingOut}
-          className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-[0.98] disabled:opacity-60"
-        >
-          {checkingOut ? "Processing…" : "Proceed to Checkout"}
-        </button>
-
         <Link
           to="/cart"
           onClick={close}
-          className="flex w-full items-center justify-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-[0.98]"
         >
-          View Full Cart
+          Proceed to Checkout
         </Link>
       </div>
     </div>

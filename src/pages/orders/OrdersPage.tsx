@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useOutletContext } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import type { AppOutletCtx } from "@/components/layout/AppLayout";
 import {
   Package,
   ShoppingBag,
@@ -15,7 +16,10 @@ import {
   Truck,
   XCircle,
   Loader2,
+  Navigation,
+  Download,
 } from "lucide-react";
+import { useAuthStore } from "@/store/auth-store";
 import {
   useOrdersStore,
   type OrderSummary,
@@ -59,6 +63,11 @@ const STATUS_CONFIG: Record<
       "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400",
     icon: CheckCircle2,
   },
+  out_for_delivery: {
+    label: "Out for Delivery",
+    color: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400",
+    icon: Truck,
+  },
   cancelled: {
     label: "Cancelled",
     color: "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
@@ -101,9 +110,24 @@ function SkeletonCard() {
 
 function OrderCard({ order }: { order: OrderSummary }) {
   const [expanded, setExpanded] = useState(false);
+  const [dlLoading, setDlLoading] = useState(false);
   const fetchOrderDetail = useOrdersStore((s) => s.fetchOrderDetail);
   const detailCache = useOrdersStore((s) => s.detailCache);
   const detailLoading = useOrdersStore((s) => s.detailLoading);
+  const token = useAuthStore((s) => s.token);
+
+  const handleDownload = async () => {
+    if (!token) return;
+    setDlLoading(true);
+    try {
+      const r    = await fetch(`/api/invoices/${order.id}/download`, { headers: { Authorization: `Bearer ${token}` } });
+      const blob = await r.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url; a.download = `${order.invoice_id ?? `invoice-${order.id}`}.pdf`; a.click();
+      URL.revokeObjectURL(url);
+    } finally { setDlLoading(false); }
+  };
 
   const items = detailCache[order.id];
   const isDetailLoading = detailLoading[order.id];
@@ -159,22 +183,30 @@ function OrderCard({ order }: { order: OrderSummary }) {
             </p>
           </div>
 
-          <button
-            onClick={toggleExpand}
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-orange-400 hover:text-orange-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-orange-500 dark:hover:text-orange-400"
-          >
-            {expanded ? (
-              <>
-                <ChevronUp size={14} />
-                Hide
-              </>
-            ) : (
-              <>
-                <ChevronDown size={14} />
-                View Details
-              </>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              to={`/orders/${order.id}/track`}
+              className="flex items-center gap-1.5 rounded-xl bg-orange-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-orange-700 transition-colors"
+            >
+              <Navigation size={12} /> Track
+            </Link>
+            {order.invoice_id && (
+              <button
+                onClick={handleDownload}
+                disabled={dlLoading}
+                title="Download invoice"
+                className="flex items-center gap-1.5 rounded-xl border border-orange-200 px-3.5 py-2 text-xs font-bold text-orange-700 hover:bg-orange-50 transition-colors disabled:opacity-60 dark:border-orange-800 dark:text-orange-400"
+              >
+                <Download size={12} /> {dlLoading ? "…" : "Invoice"}
+              </button>
             )}
-          </button>
+            <button
+              onClick={toggleExpand}
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3.5 py-2 text-xs font-medium text-gray-600 transition-colors hover:border-orange-400 hover:text-orange-600 dark:border-gray-700 dark:text-gray-400"
+            >
+              {expanded ? <><ChevronUp size={12} />Hide</> : <><ChevronDown size={12} />Details</>}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -279,7 +311,7 @@ function EmptyState() {
         Your order history will appear here after you place your first order.
       </p>
       <Link
-        to="/shop"
+        to="/dashboard"
         className="mt-7 inline-flex items-center gap-2 rounded-xl bg-orange-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 active:scale-[0.98]"
       >
         <ShoppingBag size={16} />
@@ -317,6 +349,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
+  const { statusFilter, orderSearch } = useOutletContext<AppOutletCtx>();
   const fetchOrders = useOrdersStore((s) => s.fetchOrders);
   const orders = useOrdersStore((s) => s.orders);
   const loading = useOrdersStore((s) => s.loading);
@@ -326,33 +359,18 @@ export default function OrdersPage() {
     fetchOrders();
   }, [fetchOrders]);
 
+  const visibleOrders = orders.filter((o) => {
+    const matchesStatus = statusFilter === "all" || o.status === statusFilter;
+    const matchesSearch =
+      !orderSearch.trim() ||
+      String(o.id).includes(orderSearch.trim()) ||
+      o.status.toLowerCase().includes(orderSearch.toLowerCase()) ||
+      o.delivery_address?.name?.toLowerCase().includes(orderSearch.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
   return (
-    <main className="mx-auto max-w-3xl px-5 pb-28 pt-8">
-      {/* Page header */}
-      <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">
-            My Orders
-          </h1>
-          {!loading && !error && orders.length > 0 && (
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {orders.length} {orders.length === 1 ? "order" : "orders"} placed
-            </p>
-          )}
-        </div>
-
-        {!loading && (
-          <button
-            onClick={fetchOrders}
-            aria-label="Refresh orders"
-            className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-500 transition-colors hover:border-orange-400 hover:text-orange-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-orange-500 dark:hover:text-orange-400"
-          >
-            <RefreshCw size={13} />
-            Refresh
-          </button>
-        )}
-      </div>
-
+    <main className="mx-auto max-w-3xl px-5 pb-28 pt-6">
       {/* Content */}
       {loading ? (
         <div className="space-y-4">
@@ -364,10 +382,18 @@ export default function OrdersPage() {
         <ErrorState message={error} onRetry={fetchOrders} />
       ) : orders.length === 0 ? (
         <EmptyState />
+      ) : visibleOrders.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="py-16 text-center text-sm text-gray-400 dark:text-gray-600"
+        >
+          No orders match your filters.
+        </motion.div>
       ) : (
         <div className="space-y-4">
           <AnimatePresence>
-            {orders.map((order, i) => (
+            {visibleOrders.map((order, i) => (
               <motion.div
                 key={order.id}
                 initial={{ opacity: 0, y: 12 }}

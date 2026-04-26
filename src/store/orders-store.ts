@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { useAuthStore } from "./auth-store";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -7,6 +8,7 @@ export type OrderStatus =
   | "confirmed"
   | "processing"
   | "shipped"
+  | "out_for_delivery"
   | "delivered"
   | "cancelled";
 
@@ -37,9 +39,13 @@ export interface OrderSummary {
   discount: string;
   total_amount: string;
   delivery_address: DeliveryAddress;
+  payment_method: string;
   created_at: string;
   updated_at: string;
   item_count: number;
+  invoice_id: string | null;
+  invoice_path: string | null;
+  invoice_status: string | null;
 }
 
 interface OrdersState {
@@ -66,9 +72,13 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
 
   // GET /api/orders
   fetchOrders: async () => {
+    const token = useAuthStore.getState().token;
+    if (!token) { set({ loading: false, error: "Not authenticated" }); return; }
     set({ loading: true, error: null });
     try {
-      const res = await fetch("/api/orders", { credentials: "include" });
+      const res = await fetch("/api/orders", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error ?? `Request failed (${res.status})`);
@@ -83,9 +93,13 @@ export const useOrdersStore = create<OrdersState>((set, get) => ({
   // GET /api/orders/:id — lazy, cached
   fetchOrderDetail: async (id: number) => {
     if (get().detailCache[id] !== undefined) return; // already cached
+    const token = useAuthStore.getState().token;
+    if (!token) return;
     set((s) => ({ detailLoading: { ...s.detailLoading, [id]: true } }));
     try {
-      const res = await fetch(`/api/orders/${id}`, { credentials: "include" });
+      const res = await fetch(`/api/orders/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       set((s) => ({

@@ -12,13 +12,13 @@ import {
   ChevronDown,
   Wallet,
   X,
+  UserCircle,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
-import { useBudgetStore } from "@/store/budget-store";
+import { useBudgetSummary } from "@/hooks/useBudgetSummary";
 import { useAuthStore } from "@/store/auth-store";
 import { useThemeStore } from "@/store/theme-store";
-import { APP_NAME } from "@/constants/branding";
 import { formatINR } from "@/lib/format";
 
 interface EcomNavbarProps {
@@ -28,28 +28,19 @@ interface EcomNavbarProps {
 
 export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarProps) {
   const navigate = useNavigate();
-  const totalItems = useCartStore((s) => s.totalItems);
-  const totalPrice = useCartStore((s) => s.totalPrice);
-  const toggleDrawer = useCartUIStore((s) => s.toggleDrawer);
-  const budget = useBudgetStore((s) => s.budget);
+  const count = useCartStore((s) => s.itemCount);
+  const isDrawerOpen = useCartUIStore((s) => s.isDrawerOpen);
+  const { totalBudget: budget, totalSpent: spent, remainingBudget: remaining, usedPercentage: pct, hasBudget, isOverBudget } = useBudgetSummary();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const isDark = useThemeStore((s) => s.isDark);
   const toggle = useThemeStore((s) => s.toggle);
 
   const { pathname } = useLocation();
-  const [scrolled, setScrolled] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-
-  const count = totalItems();
-  const spent = totalPrice();
-  const hasBudget = budget > 0;
-  const isOverBudget = hasBudget && spent > budget;
-  const remaining = hasBudget ? budget - spent : 0;
-  const pct = hasBudget ? (spent / budget) * 100 : 0;
 
   const displayName = user
     ? `${user.firstName} ${user.lastName}`.trim() || user.email
@@ -61,13 +52,6 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
         .join("")
         .toUpperCase() || "U"
     : "U";
-
-  // Shadow on scroll
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 4);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   // Close profile dropdown on outside click
   useEffect(() => {
@@ -105,11 +89,7 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
     : "bg-green-500";
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-shadow duration-300 ${
-        scrolled ? "shadow-lg" : "shadow-none"
-      } bg-white/80 backdrop-blur-md dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800`}
-    >
+    <header className="relative">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         {/* ── Logo ── */}
         <Link
@@ -141,6 +121,7 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
             {searchQuery && (
               <button
                 onClick={() => onSearchChange("")}
+                aria-label="Clear search"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 <X size={15} />
@@ -271,7 +252,7 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
               <ChevronDown
                 size={14}
                 className={`transition-transform duration-200 ${
-                  useCartUIStore((s) => s.isDrawerOpen) ? "rotate-180" : ""
+                  isDrawerOpen ? "rotate-180" : ""
                 }`}
               />
             )}
@@ -315,6 +296,7 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
                   {/* Links */}
                   <div className="py-1.5">
                     {[
+                      { to: "/profile", icon: UserCircle, label: "My Profile" },
                       { to: "/orders", icon: Package, label: "My Orders" },
                       { to: "/analytics", icon: BarChart3, label: "Analytics" },
                     ].map(({ to, icon: Icon, label }) => (
@@ -376,23 +358,6 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
         )}
       </AnimatePresence>
 
-      {/* ── Budget progress bar (thin, below navbar) ── */}
-      {hasBudget && (
-        <div className="h-[3px] w-full bg-gray-100 dark:bg-gray-800">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(pct, 100)}%` }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className={`h-full transition-colors duration-500 ${
-              isOverBudget || pct > 90
-                ? "bg-red-500"
-                : pct > 70
-                ? "bg-amber-400"
-                : "bg-green-500"
-            }`}
-          />
-        </div>
-      )}
     </header>
   );
 }

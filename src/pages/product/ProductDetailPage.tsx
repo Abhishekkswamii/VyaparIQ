@@ -15,7 +15,8 @@ import {
   Package,
   TrendingDown,
 } from "lucide-react";
-import { products, type Product } from "@/data/products";
+import type { Product } from "@/data/products";
+import { useProductStore } from "@/store/product-store";
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
 import { formatINR } from "@/lib/format";
@@ -110,9 +111,10 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  const storeProducts = useProductStore((s) => s.products);
   const product = useMemo(
-    () => products.find((p) => p.id === id) ?? null,
-    [id]
+    () => storeProducts.find((p) => p.id === id) ?? null,
+    [id, storeProducts]
   );
 
   const addItem = useCartStore((s) => s.addItem);
@@ -139,11 +141,11 @@ export default function ProductDetailPage() {
     const result: Product[] = [];
 
     if (product.cheaperAlternativeId) {
-      const direct = products.find((p) => p.id === product.cheaperAlternativeId);
+      const direct = storeProducts.find((p) => p.id === product.cheaperAlternativeId);
       if (direct && direct.price < product.price) result.push(direct);
     }
 
-    const sameCheaper = products
+    const sameCheaper = storeProducts
       .filter(
         (p) =>
           p.category === product.category &&
@@ -155,13 +157,13 @@ export default function ProductDetailPage() {
       .slice(0, 3 - result.length);
 
     return [...result, ...sameCheaper];
-  }, [product]);
+  }, [product, storeProducts]);
 
   // ── Related: same category, not alternatives, not current ────────────────────
   const related = useMemo<Product[]>(() => {
     if (!product) return [];
     const altIds = new Set(alternatives.map((a) => a.id));
-    return products
+    return storeProducts
       .filter(
         (p) =>
           p.category === product.category &&
@@ -169,7 +171,7 @@ export default function ProductDetailPage() {
           !altIds.has(p.id)
       )
       .slice(0, 4);
-  }, [product, alternatives]);
+  }, [product, alternatives, storeProducts]);
 
   if (!product) return null;
 

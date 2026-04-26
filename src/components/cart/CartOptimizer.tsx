@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
-import { products } from "@/data/products";
+import { useProductStore } from "@/store/product-store";
 import {
   optimizeCart,
   type CartSuggestion,
@@ -119,14 +119,15 @@ export default function CartOptimizer() {
   const [expanded, setExpanded] = useState(true);
   const [applied, setApplied] = useState(false);
 
+  const storeProducts = useProductStore((s) => s.products);
   const catalog = useMemo(
-    () => Object.fromEntries(products.map((p) => [p.id, p])),
-    []
+    () => Object.fromEntries(storeProducts.map((p) => [p.id, p])),
+    [storeProducts]
   );
 
   const result = useMemo(
-    () => optimizeCart(items, budget),
-    [items, budget]
+    () => optimizeCart(items, budget, catalog),
+    [items, budget, catalog]
   );
 
   // Hide when no items or no suggestions

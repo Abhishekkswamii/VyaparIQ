@@ -6,12 +6,9 @@ import { formatINR } from "@/lib/format";
 
 export default function CartBar() {
   const items = useCartStore((s) => s.items);
-  const totalItems = useCartStore((s) => s.totalItems);
-  const totalPrice = useCartStore((s) => s.totalPrice);
+  const count = useCartStore((s) => s.itemCount);
+  const price = useCartStore((s) => s.totalAmount);
   const openDrawer = useCartUIStore((s) => s.openDrawer);
-
-  const count = totalItems();
-  const price = totalPrice();
 
   return (
     <AnimatePresence>

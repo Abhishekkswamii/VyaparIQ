@@ -17,11 +17,10 @@ export interface Prediction {
  */
 export function usePrediction() {
   const items = useCartStore((s) => s.items);
-  const totalPrice = useCartStore((s) => s.totalPrice);
+  const spent = useCartStore((s) => s.totalAmount);
   const budget = useBudgetStore((s) => s.budget);
   const [aiPrediction, setAiPrediction] = useState<Prediction | null>(null);
 
-  const spent = totalPrice();
   const itemCount = items.length;
   const avgPrice = itemCount > 0 ? spent / itemCount : 0;
 

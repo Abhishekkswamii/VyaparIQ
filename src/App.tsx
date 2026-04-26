@@ -15,7 +15,13 @@ import AdminLogin from "./pages/admin/AdminLogin";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminInventory from "./pages/admin/AdminInventory";
+import AdminInvoices from "./pages/admin/AdminInvoices";
 import OAuthSuccessPage from "./pages/auth/OAuthSuccessPage";
+import ProfilePage from "./pages/profile/ProfilePage";
+import OrderTrackingPage from "./pages/orders/OrderTrackingPage";
+import OrderConfirmationPage from "./pages/orders/OrderConfirmationPage";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import { useThemeStore } from "./store/theme-store";
@@ -48,14 +54,20 @@ export default function App() {
           <Route path="/order-success" element={<OrderSuccessPage />} />
           <Route path="/product/:id" element={<ProductDetailPage />} />
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/:id/track" element={<OrderTrackingPage />} />
+          <Route path="/orders/:id/confirmation" element={<OrderConfirmationPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="products" element={<AdminProducts />} />
+          <Route path="dashboard"  element={<AdminDashboard />} />
+          <Route path="products"   element={<AdminProducts />} />
+          <Route path="orders"     element={<AdminOrders />} />
+          <Route path="inventory"  element={<AdminInventory />} />
+          <Route path="invoices"   element={<AdminInvoices />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

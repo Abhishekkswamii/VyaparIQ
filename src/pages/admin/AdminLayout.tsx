@@ -7,14 +7,20 @@ import {
   LogOut,
   Menu,
   X,
+  ShoppingBag,
+  AlertTriangle,
+  FileText,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { useAdminStore } from "@/store/admin-store";
 import { APP_NAME } from "@/constants/branding";
 
 const NAV = [
-  { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/dashboard",  label: "Dashboard",  icon: LayoutDashboard },
+  { to: "/admin/products",  label: "Products",   icon: Package },
+  { to: "/admin/orders",    label: "Orders",     icon: ShoppingBag },
+  { to: "/admin/inventory", label: "Inventory",  icon: AlertTriangle },
+  { to: "/admin/invoices",  label: "Invoices",   icon: FileText },
 ];
 
 function Sidebar({ onClose }: { onClose?: () => void }) {

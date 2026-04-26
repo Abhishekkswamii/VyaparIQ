@@ -18,7 +18,7 @@ const upload = multer({
   },
 });
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-pro";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
 function toFloat(v) {
   const n = Number(v);

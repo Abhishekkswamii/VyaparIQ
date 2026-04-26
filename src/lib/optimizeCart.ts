@@ -1,5 +1,5 @@
 import type { CartItem } from "@/store/cart-store";
-import { products } from "@/data/products";
+import type { Product } from "@/data/products";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -63,7 +63,8 @@ const OUTLIER_THRESHOLD = 0.30;
  */
 export function optimizeCart(
   items: CartItem[],
-  budget: number
+  budget: number,
+  catalog: Record<string, Product> = {}
 ): OptimizationResult {
   const empty: OptimizationResult = {
     suggestions: [],
@@ -75,7 +76,6 @@ export function optimizeCart(
 
   if (items.length === 0) return empty;
 
-  const catalog = Object.fromEntries(products.map((p) => [p.id, p]));
   const cartTotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
   const replaceSuggestions: ReplaceSuggestion[] = [];
@@ -112,7 +112,7 @@ export function optimizeCart(
   for (const item of items) {
     if (alreadyReplaced.has(item.id)) continue;
 
-    const cheapest = products
+    const cheapest = Object.values(catalog)
       .filter(
         (p) =>
           p.category === item.category &&

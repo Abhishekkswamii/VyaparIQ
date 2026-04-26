@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingCart, Minus, Plus, Star, Lightbulb, Zap } from "lucide-react";
 import type { Product } from "@/data/products";
-import { products } from "@/data/products";
+import { useProductStore } from "@/store/product-store";
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
 import { usePrefsStore } from "@/store/prefs-store";
@@ -24,6 +24,29 @@ const CATEGORY_FALLBACK: Record<string, string> = {
   Pantry:     "bg-green-50 dark:bg-green-900/10",
   Vegetables: "bg-emerald-50 dark:bg-emerald-900/10",
   Beverages:  "bg-sky-50 dark:bg-sky-900/10",
+};
+
+const CATEGORY_IMAGE_FALLBACK: Record<string, string> = {
+  Fruits:
+    "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=800&h=600&fit=crop&auto=format&q=75",
+  Dairy:
+    "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=800&h=600&fit=crop&auto=format&q=75",
+  Bakery:
+    "https://images.unsplash.com/photo-1549931319-a545dcf3bc73?w=800&h=600&fit=crop&auto=format&q=75",
+  Meat:
+    "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=800&h=600&fit=crop&auto=format&q=75",
+  Grains:
+    "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=800&h=600&fit=crop&auto=format&q=75",
+  Pantry:
+    "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=800&h=600&fit=crop&auto=format&q=75",
+  Vegetables:
+    "https://images.unsplash.com/photo-1518843875459-f738682238a6?w=800&h=600&fit=crop&auto=format&q=75",
+  Beverages:
+    "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=800&h=600&fit=crop&auto=format&q=75",
+  Electronics:
+    "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=800&h=600&fit=crop&auto=format&q=75",
+  Fashion:
+    "https://images.unsplash.com/photo-1445205170230-053b83016050?w=800&h=600&fit=crop&auto=format&q=75",
 };
 
 function StarRow({ rating }: { rating: number }) {
@@ -56,7 +79,14 @@ export default function ProductCard({ product }: { product: Product }) {
   const budget     = useBudgetStore((s) => s.budget);
   const addRecentView = usePrefsStore((s) => s.addRecentView);
   const addToast   = useToastStore((s) => s.addToast);
-  const [imgError, setImgError] = useState(false);
+  const categoryImage = CATEGORY_IMAGE_FALLBACK[product.category];
+  const [imgSrc, setImgSrc] = useState(product.image);
+  const [usedCategoryFallback, setUsedCategoryFallback] = useState(false);
+
+  useEffect(() => {
+    setImgSrc(product.image);
+    setUsedCategoryFallback(false);
+  }, [product.id, product.image]);
 
   const cartItem     = items.find((i) => i.id === product.id);
   const spent        = items.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -65,8 +95,9 @@ export default function ProductCard({ product }: { product: Product }) {
   const isOverBudget = hasBudget && spent >= budget;
   const wouldExceed  = hasBudget && product.price > remaining;
 
+  const storeProducts = useProductStore((s) => s.products);
   const altProduct   = product.cheaperAlternativeId
-    ? products.find((p) => p.id === product.cheaperAlternativeId)
+    ? storeProducts.find((p) => p.id === product.cheaperAlternativeId)
     : undefined;
   const hasCheaperAlt = altProduct && product.price - altProduct.price > 10;
 
@@ -90,49 +121,54 @@ export default function ProductCard({ product }: { product: Product }) {
 
   return (
     <div
-      className="group flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl dark:border-gray-800 dark:bg-gray-900"
       onMouseEnter={() => addRecentView(product.id)}
     >
-      {/* ── Image area ── */}
+      {/* ── Image area: fixed aspect ratio, no height shifts ── */}
       <div className="relative">
-        <Link to={`/product/${product.id}`} className={`block overflow-hidden ${fallbackBg}`}>
-          {/* Product badge */}
+        <Link
+          to={`/product/${product.id}`}
+          className={`relative block aspect-[4/3] overflow-hidden ${fallbackBg}`}
+        >
           {product.badge && (
-            <span
-              className={`absolute left-2 top-2 z-10 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${BADGE_COLORS[product.badge] ?? "bg-gray-500"}`}
-            >
+            <span className={`absolute left-2 top-2 z-10 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white ${BADGE_COLORS[product.badge] ?? "bg-gray-500"}`}>
               {product.badge}
             </span>
           )}
-
-          {/* Discount badge */}
           {discount >= 10 && (
             <span className="absolute right-2 top-2 z-10 rounded-md bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
               {discount}% off
             </span>
           )}
-
-          {!imgError ? (
+          {imgSrc ? (
             <img
-              src={product.image}
+              src={imgSrc}
               alt={product.name}
-              onError={() => setImgError(true)}
-              className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              onError={() => {
+                // If item image fails, try a category image once before icon fallback.
+                if (!usedCategoryFallback && categoryImage) {
+                  setImgSrc(categoryImage);
+                  setUsedCategoryFallback(true);
+                  return;
+                }
+                setImgSrc("");
+              }}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
             />
           ) : (
-            <div className={`flex h-44 w-full items-center justify-center text-5xl ${fallbackBg}`}>
+            <div className="absolute inset-0 flex items-center justify-center text-5xl">
               🛒
             </div>
           )}
         </Link>
 
-        {/* Quick Add overlay (appears on hover) */}
+        {/* Quick Add overlay */}
         {!cartItem && !isOverBudget && (
-          <div className="quick-add-overlay absolute inset-x-0 bottom-0 flex justify-center pb-3">
+          <div className="quick-add-overlay absolute inset-x-0 bottom-0 z-10 flex justify-center pb-3">
             <button
               onClick={handleAddToCart}
-              className="flex items-center gap-1.5 rounded-xl bg-orange-600/95 px-4 py-2 text-xs font-bold text-white shadow-lg backdrop-blur-sm hover:bg-orange-700 active:scale-95 transition-transform"
+              className="flex items-center gap-1.5 rounded-xl bg-orange-600/95 px-4 py-2 text-xs font-bold text-white shadow-lg backdrop-blur-sm transition-transform hover:bg-orange-700 active:scale-95"
             >
               <Zap size={12} className="fill-white" /> Quick Add
             </button>
@@ -140,33 +176,36 @@ export default function ProductCard({ product }: { product: Product }) {
         )}
       </div>
 
-      {/* ── Details ── */}
+      {/* ── Content ── */}
       <div className="flex flex-1 flex-col p-3.5">
         {/* Category */}
         <span className="mb-1 text-[10px] font-bold uppercase tracking-widest text-orange-500">
           {product.category}
         </span>
 
-        {/* Name */}
+        {/* Name — always 2 lines of space reserved via min-h */}
         <Link to={`/product/${product.id}`}>
-          <h3 className="mb-1.5 line-clamp-2 text-sm font-semibold leading-snug text-gray-800 hover:text-orange-600 dark:text-gray-100 dark:hover:text-orange-400">
+          <h3 className="mb-1.5 line-clamp-2 min-h-[2.5rem] text-sm font-semibold leading-snug text-gray-800 hover:text-orange-600 dark:text-gray-100 dark:hover:text-orange-400">
             {product.name}
           </h3>
         </Link>
 
-        {/* Rating */}
-        {product.rating !== undefined && (
-          <div className="mb-2 flex flex-wrap items-center gap-1.5">
-            <StarRow rating={product.rating} />
-            <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">{product.rating}</span>
-            {product.reviews !== undefined && (
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                ({product.reviews.toLocaleString("en-IN")})
-              </span>
-            )}
-          </div>
-        )}
+        {/* Rating — fixed height slot, always reserves space */}
+        <div className="mb-2 flex h-4 items-center gap-1.5">
+          {product.rating !== undefined && (
+            <>
+              <StarRow rating={product.rating} />
+              <span className="text-[11px] font-semibold text-gray-600 dark:text-gray-400">{product.rating}</span>
+              {product.reviews !== undefined && (
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                  ({product.reviews.toLocaleString("en-IN")})
+                </span>
+              )}
+            </>
+          )}
+        </div>
 
+        {/* Bottom section: pushed to card bottom via mt-auto */}
         <div className="mt-auto">
           {/* Price row */}
           <div className="mb-2 flex flex-wrap items-baseline gap-1.5">
@@ -176,8 +215,8 @@ export default function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
-          {/* Budget tag */}
-          <div className="mb-2.5">
+          {/* Budget badge — fixed h-5 slot, always rendered */}
+          <div className="mb-2 h-5 overflow-hidden">
             {wouldExceed && !cartItem ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600 dark:bg-red-900/20 dark:text-red-400">
                 ⚠ Over Budget
@@ -189,24 +228,26 @@ export default function ProductCard({ product }: { product: Product }) {
             ) : null}
           </div>
 
-          {/* Cheaper alt */}
-          {hasCheaperAlt && !cartItem && (
-            <button
-              onClick={() => addItem(altProduct!)}
-              className="mb-2 flex w-full items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
-            >
-              <Lightbulb size={12} />
-              Cheaper: ₹{altProduct!.price}
-            </button>
-          )}
+          {/* Cheaper alt — fixed h-8 slot, always rendered */}
+          <div className="mb-2.5 h-8">
+            {hasCheaperAlt && !cartItem && (
+              <button
+                onClick={() => addItem(altProduct!)}
+                className="flex h-full w-full items-center gap-1.5 rounded-lg bg-green-50 px-2.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100 dark:bg-green-900/20 dark:text-green-400"
+              >
+                <Lightbulb size={12} />
+                Cheaper: ₹{altProduct!.price}
+              </button>
+            )}
+          </div>
 
-          {/* Cart controls */}
+          {/* Cart controls — always at bottom */}
           {cartItem ? (
             <div className="flex w-full items-center justify-between rounded-xl bg-orange-50 px-2 py-1.5 dark:bg-orange-500/10">
               <button
                 onClick={() => decrement(product.id)}
-                aria-label="Decrease"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400"
+                aria-label="Decrease quantity"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm transition-colors hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400"
               >
                 <Minus size={14} />
               </button>
@@ -215,8 +256,8 @@ export default function ProductCard({ product }: { product: Product }) {
               </span>
               <button
                 onClick={() => increment(product.id)}
-                aria-label="Increase"
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400"
+                aria-label="Increase quantity"
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm transition-colors hover:bg-orange-100 active:scale-95 dark:bg-gray-800 dark:text-orange-400"
               >
                 <Plus size={14} />
               </button>
@@ -228,7 +269,7 @@ export default function ProductCard({ product }: { product: Product }) {
               className={`flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.97] ${
                 isOverBudget
                   ? "cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600"
-                  : "bg-orange-500 text-white hover:bg-orange-600 shadow-sm shadow-orange-500/30"
+                  : "bg-orange-500 text-white shadow-sm shadow-orange-500/30 hover:bg-orange-600"
               }`}
             >
               <ShoppingCart size={15} />

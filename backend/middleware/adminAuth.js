@@ -9,7 +9,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "change_me_in_production";
  */
 async function requireAdmin(req, res, next) {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
+  // EventSource (SSE) cannot set headers — fall back to ?token= query param
+  const token = (authHeader && authHeader.split(" ")[1]) || req.query.token;
 
   if (!token) {
     return res.status(401).json({ error: "Authentication required" });

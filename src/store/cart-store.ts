@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Product } from "@/data/products";
 import { useFamilyStore } from "./family-store";
+import { useAuthStore } from "./auth-store";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -66,13 +67,11 @@ export const useCartStore = create<CartState>()(
           return { items, ...derive(items) };
         });
         
-        // Auto-open drawer on add
-        import("./cart-ui-store").then(m => m.useCartUIStore.getState().openDrawer());
-        
         scheduleSync(() => get().syncToBackend());
       },
 
-      removeItem: (productId) => {
+      removeItem:
+ (productId) => {
         set((state) => {
           const items = state.items.filter((item) => item.id !== productId);
           return { items, ...derive(items) };
@@ -131,10 +130,15 @@ export const useCartStore = create<CartState>()(
       },
 
       syncToBackend: async () => {
+        const token = useAuthStore.getState().token;
+        if (!token) return;
         try {
           await fetch("/api/cart", {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
             body: JSON.stringify({
               items: get().items.map((i) => ({
                 product_id: i.id,

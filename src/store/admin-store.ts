@@ -15,28 +15,76 @@ export interface AdminProduct {
 }
 
 export interface AdminStats {
-  totalProducts: number;
-  totalUsers: number;
-  totalOrders: number;
-  totalRevenue: number;
+  totalProducts:   number;
+  totalUsers:      number;
+  totalOrders:     number;
+  totalRevenue:    number;
+  avgOrderValue:   number;
+  pendingOrders:   number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  todayOrders:     number;
+  todayRevenue:    number;
+  lowStockCount:   number;
+}
+
+export interface AdminOrder {
+  id:               number;
+  status:           string;
+  subtotal:         string;
+  discount:         string;
+  total_amount:     string;
+  payment_method:   string;
+  delivery_address: Record<string, string>;
+  created_at:       string;
+  item_count:       number;
+  invoice_id:       string | null;
+  first_name:       string;
+  last_name:        string;
+  email:            string;
+}
+
+export interface AdminInvoice {
+  id:             number;
+  invoice_id:     string;
+  order_id:       number;
+  user_id:        number;
+  email:          string;
+  first_name:     string;
+  last_name:      string;
+  invoice_status: string;
+  file_size:      number | null;
+  created_at:     string;
 }
 
 interface AdminState {
-  products: AdminProduct[];
+  products:     AdminProduct[];
   totalProducts: number;
-  currentPage: number;
-  totalPages: number;
-  stats: AdminStats | null;
-  loading: boolean;
-  statsLoading: boolean;
-  error: string | null;
+  currentPage:  number;
+  totalPages:   number;
 
-  fetchProducts: (page?: number, search?: string) => Promise<void>;
-  createProduct: (data: FormData) => Promise<void>;
-  updateProduct: (id: number, data: FormData) => Promise<void>;
-  deleteProduct: (id: number) => Promise<void>;
-  fetchStats: () => Promise<void>;
-  reset: () => void;
+  stats:        AdminStats | null;
+  statsLoading: boolean;
+
+  orders:        AdminOrder[];
+  ordersLoading: boolean;
+  ordersTotal:   number;
+
+  invoices:        AdminInvoice[];
+  invoicesLoading: boolean;
+
+  loading: boolean;
+  error:   string | null;
+
+  fetchProducts:     (page?: number, search?: string) => Promise<void>;
+  createProduct:     (data: FormData) => Promise<void>;
+  updateProduct:     (id: number, data: FormData) => Promise<void>;
+  deleteProduct:     (id: number) => Promise<void>;
+  fetchStats:        () => Promise<void>;
+  fetchAdminOrders:  (limit?: number, offset?: number) => Promise<void>;
+  updateOrderStatus: (id: number, status: string) => Promise<void>;
+  fetchAdminInvoices:() => Promise<void>;
+  reset:             () => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -53,26 +101,69 @@ function authHeaders(): HeadersInit {
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useAdminStore = create<AdminState>()((set, get) => ({
-  products: [],
+  products:     [],
   totalProducts: 0,
-  currentPage: 1,
-  totalPages: 1,
-  stats: null,
-  loading: false,
+  currentPage:  1,
+  totalPages:   1,
+
+  stats:        null,
   statsLoading: false,
-  error: null,
+
+  orders:        [],
+  ordersLoading: false,
+  ordersTotal:   0,
+
+  invoices:        [],
+  invoicesLoading: false,
+
+  loading: false,
+  error:   null,
 
   reset: () =>
     set({
-      products: [],
-      totalProducts: 0,
-      currentPage: 1,
-      totalPages: 1,
-      stats: null,
-      loading: false,
-      statsLoading: false,
-      error: null,
+      products: [], totalProducts: 0, currentPage: 1, totalPages: 1,
+      stats: null, statsLoading: false,
+      orders: [], ordersLoading: false, ordersTotal: 0,
+      invoices: [], invoicesLoading: false,
+      loading: false, error: null,
     }),
+
+  // ── Admin orders ──────────────────────────────────────────────────────────
+
+  fetchAdminOrders: async (limit = 50, offset = 0) => {
+    set({ ordersLoading: true });
+    try {
+      const res = await fetch(`/api/admin/orders?limit=${limit}&offset=${offset}`, { headers: authHeaders() });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      set({ orders: data.orders ?? [], ordersTotal: data.total ?? 0, ordersLoading: false });
+    } catch { set({ ordersLoading: false }); }
+  },
+
+  updateOrderStatus: async (id, status) => {
+    const res = await fetch(`/api/admin/orders/${id}/status`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...authHeaders() },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error("Failed to update status");
+    set((s) => ({
+      orders: s.orders.map((o) => o.id === id ? { ...o, status } : o),
+    }));
+    get().fetchStats();
+  },
+
+  // ── Admin invoices ────────────────────────────────────────────────────────
+
+  fetchAdminInvoices: async () => {
+    set({ invoicesLoading: true });
+    try {
+      const res = await fetch("/api/admin/invoices?limit=100", { headers: authHeaders() });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      set({ invoices: data.invoices ?? [], invoicesLoading: false });
+    } catch { set({ invoicesLoading: false }); }
+  },
 
   // ── Stats ─────────────────────────────────────────────────────────────────
 

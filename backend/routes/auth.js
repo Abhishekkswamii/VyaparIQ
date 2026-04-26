@@ -144,23 +144,16 @@ router.get(
 
 router.get(
   "/google/callback",
-  (req, res, next) => {
-    console.log("[OAuth] Callback hit — query:", req.query);
-    console.log("[OAuth] Session:", req.session);
-    next();
-  },
   passport.authenticate("google", {
     failureRedirect: `${FRONTEND_URL}/login?error=google_auth_failed`,
     failureMessage: true,
   }),
   (req, res) => {
-    console.log("[OAuth] req.user:", req.user);
     if (!req.user) {
       console.error("[OAuth] No user on req after authenticate");
       return res.redirect(`${FRONTEND_URL}/login?error=google_auth_failed`);
     }
     const token = makeToken(req.user);
-    console.log("[OAuth] Token generated, redirecting to frontend");
     res.redirect(`${FRONTEND_URL}/oauth-success?token=${token}`);
   }
 );

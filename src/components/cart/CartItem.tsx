@@ -15,8 +15,8 @@ export default function CartItem({ item }: CartItemProps) {
   const decrement = useCartStore((s) => s.decrementQuantity);
   const remove = useCartStore((s) => s.removeItem);
   const budget = useBudgetStore((s) => s.budget);
-  const totalPrice = useCartStore((s) => s.totalPrice);
-  const isOverBudget = budget > 0 && totalPrice() > budget;
+  const totalAmount = useCartStore((s) => s.totalAmount);
+  const isOverBudget = budget > 0 && totalAmount > budget;
   const familyEnabled = useFamilyStore((s) => s.enabled);
   const members = useFamilyStore((s) => s.members);
   const addedByMember = familyEnabled && item.addedBy

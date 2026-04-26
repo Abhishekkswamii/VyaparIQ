@@ -8,4 +8,5 @@ module.exports = {
   APP_DOMAIN: "vyapariq.com",
   APP_EMAIL: "hello@vyapariq.com",
   APP_SUPPORT_EMAIL: "support@vyapariq.com",
+  ASSISTANT_NAME: "Vyra",
 };

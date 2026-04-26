@@ -32,14 +32,13 @@ router.get("/", async (req, res, next) => {
     const totalSpent = parseFloat(spentResult.rows[0].total_spent);
     const remaining = parseFloat(budget.monthly_limit) - totalSpent;
 
+    const limit = parseFloat(budget.monthly_limit) || 0;
+    const percentUsed = limit > 0 ? (totalSpent / limit) * 100 : 0;
     res.json({
       budget,
       total_spent: totalSpent.toFixed(2),
       remaining: remaining.toFixed(2),
-      percentage_used: (
-        (totalSpent / parseFloat(budget.monthly_limit)) *
-        100
-      ).toFixed(1),
+      percentage_used: percentUsed.toFixed(1),
     });
   } catch (err) {
     next(err);
@@ -111,7 +110,7 @@ router.get("/alerts", async (req, res, next) => {
     );
 
     const totalSpent = parseFloat(spentResult.rows[0].total_spent);
-    const percentUsed = (totalSpent / limit) * 100;
+    const percentUsed = limit > 0 ? (totalSpent / limit) * 100 : 0;
     const alerts = [];
 
     if (percentUsed >= 100) {

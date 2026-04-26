@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lightbulb, ArrowRightLeft, X } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
-import { products } from "@/data/products";
+import { useProductStore } from "@/store/product-store";
 import { formatINR } from "@/lib/format";
 
 interface Suggestion {
@@ -21,9 +21,10 @@ export default function SmartSuggestions() {
   const removeItem = useCartStore((s) => s.removeItem);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
+  const storeProducts = useProductStore((s) => s.products);
   const catalog = useMemo(
-    () => Object.fromEntries(products.map((p) => [p.id, p])),
-    []
+    () => Object.fromEntries(storeProducts.map((p) => [p.id, p])),
+    [storeProducts]
   );
 
   const suggestions: Suggestion[] = useMemo(() => {

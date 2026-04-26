@@ -2,6 +2,9 @@
 -- Authoritative single source of truth — no separate migration needed.
 -- Safe to re-run (all CREATE/ALTER use IF NOT EXISTS / DO-EXCEPTION guards).
 
+-- ── Extensions ───────────────────────────────────────────────────
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- ── Users ────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
     id            SERIAL        PRIMARY KEY,
@@ -52,12 +55,21 @@ CREATE TABLE IF NOT EXISTS products (
     id                      SERIAL PRIMARY KEY,
     name                    VARCHAR(200)   NOT NULL,
     price                   DECIMAL(10, 2) NOT NULL,
+    mrp                     DECIMAL(10, 2),
     category                VARCHAR(50)    NOT NULL,
     barcode                 VARCHAR(50)    UNIQUE,
     image_url               TEXT,
+    rating                  DECIMAL(3, 2),
+    review_count            INTEGER        DEFAULT 0,
+    badge                   VARCHAR(50),
     cheaper_alternative_id  INTEGER        REFERENCES products(id),
+    stock                   INTEGER        NOT NULL DEFAULT 100,
     created_at              TIMESTAMP      DEFAULT NOW()
 );
+
+DO $$ BEGIN
+  ALTER TABLE products ADD COLUMN stock INTEGER NOT NULL DEFAULT 100;
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
 
 -- ── Cart Items ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS cart_items (
@@ -112,3 +124,4 @@ CREATE INDEX IF NOT EXISTS idx_expense_logs_user       ON expense_logs(user_id);
 CREATE INDEX IF NOT EXISTS idx_expense_logs_session    ON expense_logs(session_id);
 CREATE INDEX IF NOT EXISTS idx_products_category       ON products(category);
 CREATE INDEX IF NOT EXISTS idx_products_barcode        ON products(barcode);
+CREATE INDEX IF NOT EXISTS idx_products_name_trgm      ON products USING GIN (name gin_trgm_ops);

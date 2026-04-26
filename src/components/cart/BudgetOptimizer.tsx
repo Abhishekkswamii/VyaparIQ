@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Sparkles, ArrowRightLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
-import { products } from "@/data/products";
+import { useProductStore } from "@/store/product-store";
 import { formatINR } from "@/lib/format";
 
 /**
@@ -15,12 +15,13 @@ export default function BudgetOptimizer() {
   const items = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
   const removeItem = useCartStore((s) => s.removeItem);
-  const totalPrice = useCartStore((s) => s.totalPrice);
+  const price = useCartStore((s) => s.totalAmount);
   const budget = useBudgetStore((s) => s.budget);
 
+  const storeProducts = useProductStore((s) => s.products);
   const catalog = useMemo(
-    () => Object.fromEntries(products.map((p) => [p.id, p])),
-    []
+    () => Object.fromEntries(storeProducts.map((p) => [p.id, p])),
+    [storeProducts]
   );
 
   const swappable = useMemo(() => {
@@ -48,7 +49,6 @@ export default function BudgetOptimizer() {
   }, [items, catalog]);
 
   const totalSavings = swappable.reduce((s, i) => s + i.savings, 0);
-  const price = totalPrice();
 
   if (budget <= 0 || swappable.length === 0) return null;
 

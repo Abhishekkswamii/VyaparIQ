@@ -21,9 +21,9 @@ export default function CartDrawerItem({ item }: Props) {
     >
       {/* Image */}
       <div className="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-50 dark:bg-gray-900">
-        {item.image_url ? (
+        {item.image ? (
           <img
-            src={item.image_url}
+            src={item.image}
             alt={item.name}
             className="h-full w-full object-cover"
           />

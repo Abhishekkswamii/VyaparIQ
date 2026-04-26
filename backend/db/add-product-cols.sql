@@ -1,0 +1,21 @@
+ALTER TABLE products ADD COLUMN IF NOT EXISTS mrp          DECIMAL(10,2);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS rating       DECIMAL(3,2);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS badge        VARCHAR(50);
+
+UPDATE products SET mrp=60,  rating=4.3, review_count=1204, badge='Fresh'      WHERE id=1;
+UPDATE products SET mrp=75,  rating=4.6, review_count=3421, badge=NULL         WHERE id=2;
+UPDATE products SET mrp=55,  rating=4.1, review_count=892,  badge='Bestseller' WHERE id=3;
+UPDATE products SET mrp=144, rating=4.5, review_count=2108, badge=NULL         WHERE id=4;
+UPDATE products SET mrp=249, rating=4.2, review_count=657,  badge=NULL         WHERE id=5;
+UPDATE products SET mrp=330, rating=4.4, review_count=1876, badge='Popular'    WHERE id=6;
+UPDATE products SET mrp=110, rating=4.7, review_count=5210, badge='Bestseller' WHERE id=7;
+UPDATE products SET mrp=699, rating=4.5, review_count=1342, badge=NULL         WHERE id=8;
+UPDATE products SET mrp=55,  rating=4.0, review_count=734,  badge='Fresh'      WHERE id=9;
+UPDATE products SET mrp=70,  rating=4.2, review_count=519,  badge=NULL         WHERE id=10;
+UPDATE products SET mrp=320, rating=4.4, review_count=987,  badge=NULL         WHERE id=11;
+UPDATE products SET mrp=140, rating=4.6, review_count=2341, badge='Popular'    WHERE id=12;
+UPDATE products SET mrp=180, rating=4.3, review_count=1102, badge=NULL         WHERE id=13;
+UPDATE products SET mrp=310, rating=4.5, review_count=1678, badge=NULL         WHERE id=14;
+UPDATE products SET mrp=149, rating=4.1, review_count=823,  badge=NULL         WHERE id=15;
+UPDATE products SET mrp=200, rating=4.4, review_count=2897, badge='Fresh'      WHERE id=16;

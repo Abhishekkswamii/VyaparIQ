@@ -10,13 +10,12 @@ import { formatINR } from "@/lib/format";
  * Returns derived budget status so callers can use it for UI hints.
  */
 export function useAlerts() {
-  const totalPrice = useCartStore((s) => s.totalPrice);
+  const spent = useCartStore((s) => s.totalAmount);
   const budget = useBudgetStore((s) => s.budget);
   const addToast = useToastStore((s) => s.addToast);
   const triggered = useRef(new Set<number>());
   const prevBudget = useRef(budget);
 
-  const spent = totalPrice();
   const remaining = budget - spent;
   const pct = budget > 0 ? (spent / budget) * 100 : 0;
   const isOverBudget = budget > 0 && spent > budget;

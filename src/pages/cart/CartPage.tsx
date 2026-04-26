@@ -10,7 +10,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
-import { useBudgetStore } from "@/store/budget-store";
+import { useBudgetSummary } from "@/hooks/useBudgetSummary";
 import CartItem from "@/components/cart/CartItem";
 import AnimatedNumber from "@/components/ui/AnimatedNumber";
 import SmartSuggestions from "@/components/cart/SmartSuggestions";
@@ -24,23 +24,16 @@ import { useOffersStore, calculateDiscount } from "@/store/offers-store";
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
-  const totalItems = useCartStore((s) => s.totalItems);
-  const totalPrice = useCartStore((s) => s.totalPrice);
+  const count = useCartStore((s) => s.itemCount);
+  const price = useCartStore((s) => s.totalAmount);
   const clearCart = useCartStore((s) => s.clearCart);
-  const budget = useBudgetStore((s) => s.budget);
+  const { totalBudget: budget, remainingBudget: remaining, usedPercentage: pct, hasBudget, isOverBudget, isNearLimit } = useBudgetSummary();
 
   const getAppliedOffer = useOffersStore((s) => s.getAppliedOffer);
 
-  const count = totalItems();
-  const price = totalPrice();
   const appliedOffer = getAppliedOffer();
   const { total: discountTotal } = calculateDiscount(items, appliedOffer);
   const finalPrice = Math.max(0, price - discountTotal);
-  const hasBudget = budget > 0;
-  const isOverBudget = hasBudget && price > budget;
-  const remaining = hasBudget ? budget - price : 0;
-  const pct = hasBudget ? Math.min((price / budget) * 100, 100) : 0;
-  const isNearLimit = !isOverBudget && pct > 80;
 
   if (items.length === 0) {
     return (
@@ -60,7 +53,7 @@ export default function CartPage() {
             Browse the shop and add items to get started
           </p>
           <Link
-            to="/shop"
+            to="/dashboard"
             className="mt-6 inline-flex items-center gap-2 rounded-xl bg-orange-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 active:scale-[0.98]"
           >
             Browse Products
@@ -137,7 +130,7 @@ export default function CartPage() {
           </AnimatePresence>
 
           <Link
-            to="/shop"
+            to="/dashboard"
             className="mt-2 flex items-center gap-2 text-sm font-medium text-orange-600 hover:underline dark:text-orange-400"
           >
             <ShoppingBag size={15} />

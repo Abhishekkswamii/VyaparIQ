@@ -97,6 +97,43 @@ router.delete("/", async (req, res, next) => {
   }
 });
 
+// PUT /api/cart — bulk replace cart (used by frontend Zustand store sync)
+router.put("/", async (req, res, next) => {
+  const db = req.app.get("db");
+  const redis = req.app.get("redis");
+  const userId = req.user.id;
+  const { items } = req.body;
+
+  if (!Array.isArray(items)) {
+    return res.status(400).json({ error: "items must be an array" });
+  }
+
+  const client = await db.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
+    for (const item of items) {
+      const pid = parseInt(item.product_id, 10);
+      const qty = Math.max(1, parseInt(item.quantity, 10));
+      if (!Number.isFinite(pid) || !Number.isFinite(qty)) continue;
+      await client.query(
+        `INSERT INTO cart_items (user_id, product_id, quantity)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, product_id) DO UPDATE SET quantity = $3, added_at = NOW()`,
+        [userId, pid, qty]
+      );
+    }
+    await client.query("COMMIT");
+    try { await redis.del(`cart:${userId}`); } catch {}
+    res.json({ ok: true });
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
+});
+
 // POST /api/cart/checkout — checkout current cart
 router.post("/checkout", async (req, res, next) => {
   try {

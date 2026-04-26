@@ -44,6 +44,8 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL:-http://localhost:5001/api/auth/google/callback}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.5-flash}
     depends_on:
       postgres:
         condition: service_healthy
@@ -61,7 +63,8 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+      - ./backend/db/orders.sql:/docker-entrypoint-initdb.d/02-orders.sql:ro
+      - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/03-seed.sql:ro
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-vyapariq}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vyapariq_secret}

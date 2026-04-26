@@ -1,14 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, SlidersHorizontal, X, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { products } from "@/data/products";
 import ProductCard from "@/components/ui/ProductCard";
 import { usePrefsStore } from "@/store/prefs-store";
-
-const ALL_CATEGORIES = [
-  "All",
-  ...Array.from(new Set(products.map((p) => p.category))).sort(),
-];
+import { useProductStore } from "@/store/product-store";
 
 const PRICE_RANGES = [
   { label: "Under ₹100", min: 0, max: 100 },
@@ -26,6 +21,14 @@ const SORT_OPTIONS = [
 ];
 
 export default function ShopPage() {
+  const { products, fetch: fetchProducts } = useProductStore();
+  useEffect(() => { fetchProducts(); }, [fetchProducts]);
+
+  const ALL_CATEGORIES = useMemo(
+    () => ["All", ...Array.from(new Set(products.map((p) => p.category))).sort()],
+    [products]
+  );
+
   const [category, setCategory] = useState("All");
   const [sortBy, setSortBy] = useState("default");
   const [query, setQuery] = useState("");
@@ -293,10 +296,11 @@ export default function ShopPage() {
                   <Heart size={15} className="text-pink-500" />
                   <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100">Recommended For You</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(160px,1fr))]">
                   {recommended.map((product) => (
                     <motion.div
                       key={`rec-${product.id}`}
+                      className="h-full"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.25 }}
@@ -313,17 +317,18 @@ export default function ShopPage() {
             {filtered.length > 0 ? (
               <motion.div
                 layout
-                className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4"
+                className="grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(160px,1fr))]"
               >
                 <AnimatePresence mode="popLayout">
                   {filtered.map((product, i) => (
                     <motion.div
                       key={product.id}
                       layout
+                      className="h-full"
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      transition={{ duration: 0.25, delay: i * 0.03 }}
+                      transition={{ duration: 0.25, delay: Math.min(i * 0.03, 0.3) }}
                     >
                       <ProductCard product={product} />
                     </motion.div>

@@ -138,7 +138,7 @@ export default function CheckoutSummaryModal() {
                 <ArrowRight size={14} />
               </Link>
               <Link
-                to="/shop"
+                to="/dashboard"
                 onClick={close}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
               >

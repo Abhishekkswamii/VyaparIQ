@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, X, Send, Bot, Camera } from "lucide-react";
+import { MessageCircle, X, Send, Bot, Camera, Zap } from "lucide-react";
 import { useCartStore } from "@/store/cart-store";
 import { useBudgetStore } from "@/store/budget-store";
 import { useAuthStore } from "@/store/auth-store";
@@ -11,6 +11,7 @@ import type { Product } from "@/data/products";
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  intent?: string;
 }
 
 interface AgentCartItem {
@@ -27,10 +28,18 @@ interface AgentResponse {
   reply: string;
   intent: string;
   actions?: Array<Record<string, unknown>>;
+  needs_choice?: boolean;
+  options?: Array<{ id: number; name: string; price: number }>;
   cart?: {
     items: AgentCartItem[];
     total: number;
     itemCount: number;
+  };
+  budget?: {
+    enabled: boolean;
+    monthly_limit: number;
+    remaining: number;
+    willExceed: boolean;
   };
 }
 
@@ -46,15 +55,29 @@ interface VisionResponse {
   options?: Array<{ id: number; name: string; price: number; category: string }>;
 }
 
-const QUICK_PROMPTS = ["What's my budget?", "Add rice and milk", "Show my cart"];
+const QUICK_PROMPTS = ["Budget kitna bacha?", "Rice aur milk add karo", "Cart dikhao", "Checkout kar do"];
 
-export default function PennyChatbot() {
+const TOOL_STATES: Record<string, string> = {
+  ADD_TO_CART:      "🛒 Adding to cart…",
+  REMOVE_FROM_CART: "🗑️ Removing item…",
+  UPDATE_QUANTITY:  "✏️ Updating quantity…",
+  SEARCH_PRODUCT:   "🔍 Searching products…",
+  CHECKOUT:         "📦 Placing your order…",
+  REORDER:          "🔄 Re-adding previous items…",
+  RECOMMEND:        "✨ Finding recommendations…",
+  VIEW_CART:        "🛒 Loading your cart…",
+  CHECK_BUDGET:     "💰 Checking budget…",
+  GREETING:         "👋 Saying hello…",
+};
+
+export default function VyraChatbot() {
   const [open, setOpen] = useState(false);
+  const [toolState, setToolState] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: "assistant",
       content:
-        "Hi! I'm Penny 🪙 — your smart shopping assistant. Ask me about your cart, budget, or deals!",
+        "Hi, I'm Vyra ✨ — your smart shopping assistant. Ask me about your cart, budget, or deals!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -90,6 +113,7 @@ export default function PennyChatbot() {
     setLoading(true);
 
     let reply: string;
+    let intent = "unknown";
     try {
       const res = await fetch("/api/chat-agent", {
         method: "POST",
@@ -102,26 +126,33 @@ export default function PennyChatbot() {
           cart_total: totalPrice(),
           budget,
           item_count: items.length,
-          history: messages.slice(-6),
         }),
       });
       if (res.ok) {
         const data: AgentResponse = await res.json();
         reply = data.reply;
+        intent = data.intent || "unknown";
+        setToolState(TOOL_STATES[intent] ?? null);
         if (data.cart?.items) {
           replaceCart(data.cart.items.map(mapAgentItemToCartItem));
         }
         for (const action of data.actions || []) {
-          if (action.type === "added") {
-            addToast({ type: "success", message: `Added ${String(action.name)} to cart` });
-          } else if (action.type === "removed") {
-            addToast({ type: "info", message: `Removed ${String(action.name)} from cart` });
-          } else if (action.type === "quantity_updated") {
-            addToast({
-              type: "info",
-              message: `${String(action.name)} quantity updated to ${String(action.quantity)}`,
-            });
+          if (action.type === "ADDED") {
+            addToast({ type: "success", message: `✅ Added ${String(action.name)} to cart` });
+            openCartDrawer();
+          } else if (action.type === "REMOVED") {
+            addToast({ type: "info", message: `🗑️ Removed ${String(action.name)} from cart` });
+          } else if (action.type === "QUANTITY_UPDATED") {
+            addToast({ type: "info", message: `✏️ ${String(action.name)} → ×${String(action.quantity)}` });
+          } else if (action.type === "CHECKOUT_COMPLETE") {
+            addToast({ type: "success", message: `📦 Order #${String(action.orderId)} placed! ₹${Number(action.total).toFixed(0)}` });
+            replaceCart([]);
+          } else if (action.type === "CHECKOUT_NEEDS_ADDRESS") {
+            addToast({ type: "info", message: "Go to Cart → Checkout to add delivery address" });
           }
+        }
+        if (data.budget?.willExceed) {
+          addToast({ type: "danger", message: `⚠️ Cart ₹${data.cart?.total?.toFixed(0)} exceeds budget (${data.budget.remaining.toFixed(0)} left)` });
         }
       } else {
         reply = fallbackReply(text);
@@ -130,8 +161,9 @@ export default function PennyChatbot() {
       reply = fallbackReply(text);
     }
 
-    setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+    setMessages((prev) => [...prev, { role: "assistant", content: reply, intent }]);
     setLoading(false);
+    setToolState(null);
   };
 
   const onCameraPick = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -168,7 +200,7 @@ export default function PennyChatbot() {
       }
       for (const action of data.actions || []) {
         if (action.type === "added") {
-          addToast({ type: "success", message: `Added ${String(action.name)} to cart` });
+          addToast({ type: "success", message: `Vyra added ${String(action.name)} to your cart` });
           openCartDrawer();
         }
       }
@@ -197,7 +229,8 @@ export default function PennyChatbot() {
             exit={{ scale: 0 }}
             onClick={() => setOpen(true)}
             className="fixed bottom-24 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg shadow-violet-600/30 transition-all hover:bg-violet-700 hover:scale-105 active:scale-95"
-            aria-label="Chat with Penny"
+            aria-label="Chat with Vyra"
+            title="Chat with Vyra"
           >
             <MessageCircle size={22} />
           </motion.button>
@@ -216,15 +249,19 @@ export default function PennyChatbot() {
             {/* Header */}
             <div className="flex items-center justify-between border-b border-gray-100 bg-violet-600 px-4 py-3 dark:border-gray-800">
               <div className="flex items-center gap-2">
-                <Bot size={18} className="text-white" />
+                <div className="relative">
+                  <Bot size={18} className="text-white" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-green-400 ring-1 ring-violet-600" />
+                </div>
                 <div>
-                  <p className="text-sm font-bold text-white">Penny</p>
-                  <p className="text-[10px] text-violet-200">Smart assistant</p>
+                  <p className="text-sm font-bold text-white">Vyra Agent</p>
+                  <p className="text-[10px] text-violet-200">{toolState ?? "Powered by Gemini"}</p>
                 </div>
               </div>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded-lg p-1.5 text-violet-200 hover:bg-violet-500"
+                title="Close Vyra"
               >
                 <X size={16} />
               </button>
@@ -261,23 +298,31 @@ export default function PennyChatbot() {
               {loading && (
                 <div className="flex justify-start">
                   <div className="rounded-2xl rounded-bl-md bg-gray-100 px-4 py-3 dark:bg-gray-800">
-                    <div className="flex gap-1">
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "0ms" }} />
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "150ms" }} />
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400" style={{ animationDelay: "300ms" }} />
-                    </div>
+                    {toolState ? (
+                      <div className="flex items-center gap-2">
+                        <Zap size={12} className="animate-pulse text-violet-500" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{toolState}</span>
+                      </div>
+                    ) : (
+                      <div className="flex gap-1">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 delay-0" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 delay-150" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-gray-400 delay-300" />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
             {/* Quick prompts */}
-            <div className="flex gap-1.5 border-t border-gray-100 px-4 py-2 dark:border-gray-800">
+            <div className="flex flex-wrap gap-1.5 border-t border-gray-100 px-4 py-2 dark:border-gray-800">
               {QUICK_PROMPTS.map((q) => (
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="rounded-full border border-gray-200 px-2.5 py-1 text-[10px] font-medium text-gray-500 transition-colors hover:border-violet-300 hover:text-violet-600 dark:border-gray-700 dark:text-gray-400 dark:hover:border-violet-600"
+                  disabled={loading}
+                  className="rounded-full border border-gray-200 px-2.5 py-1 text-[10px] font-medium text-gray-500 transition-colors hover:border-violet-300 hover:text-violet-600 disabled:opacity-40 dark:border-gray-700 dark:text-gray-400 dark:hover:border-violet-600"
                 >
                   {q}
                 </button>
@@ -292,20 +337,22 @@ export default function PennyChatbot() {
                 accept="image/*"
                 capture="environment"
                 className="hidden"
+                title="Vyra Vision — capture product image"
                 onChange={onCameraPick}
               />
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && send(input)}
-                placeholder="Ask Penny..."
+                placeholder="Ask Vyra anything…"
                 className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:ring-violet-500/20"
               />
               <button
                 onClick={() => cameraInputRef.current?.click()}
                 disabled={loading}
                 className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 transition-all hover:bg-gray-50 disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                aria-label="Capture product image"
+                aria-label="Vyra Vision — capture product image"
+                title="Vyra Vision"
               >
                 <Camera size={14} />
               </button>
@@ -313,6 +360,7 @@ export default function PennyChatbot() {
                 onClick={() => send(input)}
                 disabled={!input.trim() || loading}
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-600 text-white transition-all hover:bg-violet-700 disabled:opacity-40"
+                title="Send"
               >
                 <Send size={14} />
               </button>
@@ -324,13 +372,9 @@ export default function PennyChatbot() {
   );
 }
 
-// Local fallback when AI service is unavailable
-function fallbackReply(text: string): string {
-  const t = text.toLowerCase();
-  if (t.includes("budget")) return "Set your budget on the Overview page, then I'll track it for you!";
-  if (t.includes("deal") || t.includes("offer")) return "Try FRESH10, DAIRY15, SAVE50, or MEGA20 coupon codes!";
-  if (t.includes("help")) return "I can help with budget tracking, coupons & deals, and cart summaries.";
-  return "I'm not sure about that. Try asking about your budget, deals, or cart!";
+// Only called on network/service failure — not a chatbot fallback
+function fallbackReply(_text: string): string {
+  return "⚠️ Couldn't reach Vyra right now. Please check your connection or try again in a moment.";
 }
 
 function mapAgentItemToCartItem(item: AgentCartItem) {

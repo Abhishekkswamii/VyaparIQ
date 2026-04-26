@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
+import type { AppOutletCtx } from "@/components/layout/AppLayout";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
@@ -13,7 +15,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine,
 } from "recharts";
 import { useCartStore } from "@/store/cart-store";
-import { useBudgetStore } from "@/store/budget-store";
+import { useBudgetSummary } from "@/hooks/useBudgetSummary";
 import { formatINR } from "@/lib/format";
 
 /* ── colour maps ─────────────────────────────────────────── */
@@ -49,13 +51,19 @@ function CatTooltip({ active, payload }: { active?: boolean; payload?: Array<{ p
 
 /* ── main page ───────────────────────────────────────────── */
 export default function AnalyticsPage() {
-  const items     = useCartStore((s) => s.items);
-  const totalPrice = useCartStore((s) => s.totalPrice);
-  const budget    = useBudgetStore((s) => s.budget);
+  const items = useCartStore((s) => s.items);
+  const { totalBudget: budget, totalSpent: spent } = useBudgetSummary();
 
+  const { dateRange } = useOutletContext<AppOutletCtx>();
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [sessions, setSessions] = useState(mockSessions);
   const [sortAsc, setSortAsc] = useState(false);
+
+  const filteredSessions = useMemo(() => {
+    if (dateRange === "week") return sessions.slice(0, 3);
+    if (dateRange === "3months") return sessions;
+    return sessions;
+  }, [sessions, dateRange]);
 
   // Try fetching real sessions (falls back to mock)
   useEffect(() => {
@@ -66,8 +74,6 @@ export default function AnalyticsPage() {
       })
       .catch(() => { /* use mock */ });
   }, []);
-
-  const spent = totalPrice();
 
   /* ── category pie data ─ */
   const catData = useMemo(() => {
@@ -93,40 +99,35 @@ export default function AnalyticsPage() {
 
   /* ── spending trend from sessions ─ */
   const trendData = useMemo(
-    () => [...sessions].reverse().map((s) => ({ name: s.date, spend: s.total, budget: s.budget })),
-    [sessions]
+    () => [...filteredSessions].reverse().map((s) => ({ name: s.date, spend: s.total, budget: s.budget })),
+    [filteredSessions]
   );
 
   /* ── category comparison badges (vs last session) ─ */
   // simplified: compare current category totals against the mock percentages
   const sortedSessions = useMemo(
     () =>
-      [...sessions].sort((a, b) =>
+      [...filteredSessions].sort((a, b) =>
         sortAsc ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)
       ),
-    [sessions, sortAsc]
+    [filteredSessions, sortAsc]
   );
 
   const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
   const fadeUp  = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
 
-  const weeklyTotal = sessions.slice(0, 3).reduce((s, d) => s + d.total, 0);
-  const monthlyTotal = sessions.reduce((s, d) => s + d.total, 0);
+  const weeklyTotal = filteredSessions.slice(0, 3).reduce((s, d) => s + d.total, 0);
+  const monthlyTotal = filteredSessions.reduce((s, d) => s + d.total, 0);
 
   const statCards = [
     { label: "This Week",   value: formatINR(weeklyTotal),  icon: DollarSign,  delta: "+12%", positive: true,  bg: "bg-orange-50 dark:bg-orange-900/20", iconColor: "text-orange-600 dark:text-orange-400" },
     { label: "This Month",  value: formatINR(monthlyTotal), icon: TrendingUp,  delta: "+8%",  positive: true,  bg: "bg-blue-50 dark:bg-blue-900/20",     iconColor: "text-blue-600 dark:text-blue-400" },
-    { label: "Sessions",    value: String(sessions.length),  icon: ShoppingBag, delta: `${sessions.length} total`, positive: true,  bg: "bg-violet-50 dark:bg-violet-900/20", iconColor: "text-violet-600 dark:text-violet-400" },
-    { label: "Avg. Session", value: formatINR(sessions.length ? monthlyTotal / sessions.length : 0), icon: BarChart3, delta: sessions.length > 1 ? "-2%" : "—", positive: false, bg: "bg-amber-50 dark:bg-amber-900/20", iconColor: "text-amber-600 dark:text-amber-400" },
+    { label: "Sessions",    value: String(filteredSessions.length),  icon: ShoppingBag, delta: `${filteredSessions.length} total`, positive: true,  bg: "bg-violet-50 dark:bg-violet-900/20", iconColor: "text-violet-600 dark:text-violet-400" },
+    { label: "Avg. Session", value: formatINR(filteredSessions.length ? monthlyTotal / filteredSessions.length : 0), icon: BarChart3, delta: filteredSessions.length > 1 ? "-2%" : "—", positive: false, bg: "bg-amber-50 dark:bg-amber-900/20", iconColor: "text-amber-600 dark:text-amber-400" },
   ];
 
   return (
-    <main className="mx-auto max-w-5xl px-5 pb-28 pt-8 dark:bg-gray-950">
-      <div className="mb-6">
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Insights into your shopping habits and spending patterns
-        </p>
-      </div>
+    <main className="mx-auto max-w-5xl px-5 pb-28 pt-6 dark:bg-gray-950">
 
       {/* ── stat cards ── */}
       <motion.div variants={stagger} initial="hidden" animate="show" className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

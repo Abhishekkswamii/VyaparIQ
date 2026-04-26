@@ -1,3 +1,5 @@
+import os
+import httpx
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Optional
@@ -160,10 +162,58 @@ async def predict(req: PredictRequest):
     )
 
 
-# ── Penny Chatbot ────────────────────────────────────────────
+# ── Vyra Chatbot ────────────────────────────────────────────
+
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+VYRA_SYSTEM_PROMPT = """You are Vyra, VyaparIQ's smart AI shopping assistant.
+Answer shopping questions concisely (1-3 sentences).
+You understand English, Hindi, and Hinglish naturally.
+Context will include cart total, budget, and item count.
+Use emojis naturally. Never use markdown formatting.
+If asked about specific products, explain you handle that via the main chat."""
+
+VYRA_FALLBACK_RULES = [
+    (["hello", "hi", "hey", "namaste"], "Hey there! 👋 I'm Vyra, your smart shopping assistant. Ask me about your cart, budget, or deals!"),
+    (["budget", "paisa", "bacha"], "Budget status: ₹{cart_total:.0f} spent of ₹{budget:.0f}. {remaining_msg}"),
+    (["cart", "items", "kya hai"], "You have {item_count} items in your cart totalling ₹{cart_total:.0f}."),
+    (["deal", "offer", "coupon", "discount"], "Try: FRESH10 (10% off fruits), DAIRY15 (15% off dairy), SAVE50 (₹50 off ₹500+), MEGA20 (20% off ₹1000+)!"),
+    (["help", "madad"], "I can help with budget tracking, coupon codes, cheaper alternatives, and cart summaries. Just ask!"),
+    (["thank", "thanks", "shukriya"], "You're welcome! Happy shopping! 🛒"),
+]
+
+
+async def call_gemini_chat(message: str, cart_total: float, budget: float, item_count: int, history: list) -> Optional[str]:
+    """Call Gemini API for conversational response."""
+    if not GEMINI_API_KEY:
+        return None
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+
+    contents = []
+    for h in (history or [])[-8:]:
+        contents.append({"role": h.role if h.role in ("user", "model") else "user", "parts": [{"text": h.content}]})
+    context = f"Cart: {item_count} items, ₹{cart_total:.0f} total. Budget: ₹{budget:.0f} (remaining: ₹{max(0, budget - cart_total):.0f})."
+    contents.append({"role": "user", "parts": [{"text": f"{context}\nUser: {message}"}]})
+
+    payload = {
+        "systemInstruction": {"parts": [{"text": VYRA_SYSTEM_PROMPT}]},
+        "contents": contents,
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 200},
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, json=payload)
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except Exception:
+        return None
+
 
 class ChatMessage(BaseModel):
-    role: str       # "user" or "assistant"
+    role: str
     content: str
 
 
@@ -179,23 +229,18 @@ class ChatResponse(BaseModel):
     reply: str
 
 
-PENNY_RULES = [
-    (["hello", "hi", "hey"], "Hey there! 👋 I'm Penny, your smart shopping assistant. Ask me about your cart, budget, or deals!"),
-    (["budget"], "Your budget status: ₹{cart_total:.0f} spent of ₹{budget:.0f}. {remaining_msg}"),
-    (["cart", "items"], "You have {item_count} items in your cart totalling ₹{cart_total:.0f}."),
-    (["deal", "offer", "coupon", "discount"], "Try these codes: FRESH10 for 10% off fruits, DAIRY15 for 15% off dairy, SAVE50 for ₹50 off on ₹500+, or MEGA20 for 20% off ₹1000+!"),
-    (["save", "saving", "cheap"], "Check the Smart Suggestions in your cart — I'll find cheaper alternatives automatically! Also try coupon codes like SAVE50."),
-    (["help"], "I can help with:\n• Budget tracking\n• Coupon codes & offers\n• Finding cheaper alternatives\n• Cart summaries\nJust ask!"),
-    (["thank", "thanks"], "You're welcome! Happy shopping! 🛒"),
-]
-
-
 @app.post("/ai/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    msg = req.message.lower().strip()
+    # Try Gemini first
+    gemini_reply = await call_gemini_chat(
+        req.message, req.cart_total, req.budget, req.item_count, req.history or []
+    )
+    if gemini_reply:
+        return ChatResponse(reply=gemini_reply)
 
-    # Check rules
-    for keywords, template in PENNY_RULES:
+    # Rule-based fallback (no API key or Gemini unavailable)
+    msg = req.message.lower().strip()
+    for keywords, template in VYRA_FALLBACK_RULES:
         if any(kw in msg for kw in keywords):
             remaining = req.budget - req.cart_total
             remaining_msg = (
@@ -211,7 +256,4 @@ async def chat(req: ChatRequest):
             )
             return ChatResponse(reply=reply)
 
-    # Default response
-    return ChatResponse(
-        reply="I'm not sure about that, but I can help with budget tracking, finding deals, or cart questions. Try asking about your budget or available offers!"
-    )
+    return ChatResponse(reply="I can help with budget tracking, deals, and cart questions. What would you like to know?")
