@@ -29,7 +29,7 @@ export default function AppLayout() {
   const showCategoryBar = CATEGORY_BAR_ROUTES.includes(pathname);
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
+    <div className="flex min-h-screen flex-col bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
       {/* ── Sticky top chrome ── */}
       <EcomNavbar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
       {showCategoryBar && (
@@ -37,12 +37,11 @@ export default function AppLayout() {
       )}
 
       {/* ── Page content ── */}
-      <main className="min-h-[calc(100vh-67px)]">
+      <main className="flex-1">
         <Outlet context={{ searchQuery, activeCategory }} />
       </main>
 
       {/* ── Global overlays / fixed UI ── */}
-      <CartBar />
       <CartDrawer />
       <ToastContainer />
       <CheckoutSummaryModal />

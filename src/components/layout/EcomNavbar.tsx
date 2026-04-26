@@ -18,6 +18,7 @@ import { useCartUIStore } from "@/store/cart-ui-store";
 import { useBudgetStore } from "@/store/budget-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useThemeStore } from "@/store/theme-store";
+import { APP_NAME } from "@/constants/branding";
 import { formatINR } from "@/lib/format";
 
 interface EcomNavbarProps {
@@ -107,9 +108,9 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
     <header
       className={`sticky top-0 z-50 transition-shadow duration-300 ${
         scrolled ? "shadow-lg" : "shadow-none"
-      } bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800`}
+      } bg-white/80 backdrop-blur-md dark:bg-gray-900/80 border-b border-gray-100 dark:border-gray-800`}
     >
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         {/* ── Logo ── */}
         <Link
           to="/dashboard"
@@ -119,7 +120,7 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
             <ShoppingCart size={18} className="text-white" />
           </div>
           <span className="hidden text-xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:block">
-            Vyapari<span className="text-orange-500">Q</span>
+            Vyapar<span className="text-orange-500">IQ</span>
           </span>
         </Link>
 
@@ -237,24 +238,43 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
 
           {/* Cart button */}
           <button
-            onClick={toggleDrawer}
+            onClick={() => {
+              if (count === 0) {
+                navigate("/cart");
+              } else if (useCartUIStore.getState().isDrawerOpen) {
+                navigate("/cart");
+                useCartUIStore.getState().closeDrawer();
+              } else {
+                useCartUIStore.getState().openDrawer();
+              }
+            }}
             aria-label="Open cart"
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 transition-colors hover:bg-orange-50 hover:text-orange-500 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-orange-400"
+            className="relative flex h-9 items-center gap-1.5 rounded-xl px-2.5 text-gray-500 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-orange-400"
           >
-            <ShoppingCart size={19} />
-            <AnimatePresence>
-              {count > 0 && (
-                <motion.span
-                  key="badge"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white shadow-sm"
-                >
-                  {count}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            <div className="relative">
+              <ShoppingCart size={19} />
+              <AnimatePresence>
+                {count > 0 && (
+                  <motion.span
+                    key="badge"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold text-white shadow-sm"
+                  >
+                    {count}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+            {count > 0 && (
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${
+                  useCartUIStore((s) => s.isDrawerOpen) ? "rotate-180" : ""
+                }`}
+              />
+            )}
           </button>
 
           {/* Profile dropdown */}

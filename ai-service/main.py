@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import List, Optional
 
-app = FastAPI(title="SmartCart AI Service")
+app = FastAPI(title="VyaparIQ AI Service")
 
 
 # ── Models ───────────────────────────────────────────────────
@@ -42,7 +42,7 @@ class SuggestResponse(BaseModel):
 
 @app.get("/ai/health")
 async def health():
-    return {"status": "ok", "service": "smartcart-ai"}
+    return {"status": "ok", "service": "vyapariq-ai"}
 
 
 @app.post("/ai/suggest", response_model=SuggestResponse)

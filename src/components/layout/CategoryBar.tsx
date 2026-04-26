@@ -27,10 +27,10 @@ export default function CategoryBar({ active, onChange }: CategoryBarProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="sticky top-[67px] z-40 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <div className="sticky top-[var(--nav-height)] z-40 border-b border-gray-100 bg-white/80 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
       <div
         ref={scrollRef}
-        className="scrollbar-hide flex items-center gap-0.5 overflow-x-auto px-4 sm:px-6 lg:px-8"
+        className="scrollbar-hide mx-auto flex max-w-[1440px] items-center gap-0.5 overflow-x-auto px-4 sm:px-6 lg:px-8"
       >
         {CATEGORIES.map(({ id, label, icon: Icon }) => {
           const isActive = active === id;

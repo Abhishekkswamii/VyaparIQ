@@ -1,7 +1,7 @@
 {
-  "name": "smartcart-backend",
+  "name": "vyapariq-backend",
   "version": "1.0.0",
-  "description": "SmartCart REST API — Express + PostgreSQL + Redis",
+  "description": "VyaparIQ REST API — Express + PostgreSQL + Redis",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

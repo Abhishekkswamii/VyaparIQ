@@ -8,6 +8,7 @@ import { useBudgetStore } from "@/store/budget-store";
 import { formatINR } from "@/lib/format";
 import ProductCard from "@/components/ui/ProductCard";
 import ProductSkeleton from "@/components/ui/ProductSkeleton";
+import { APP_NAME } from "@/constants/branding";
 import type { CategoryId } from "@/components/layout/CategoryBar";
 
 // Map category bar IDs to product data categories
@@ -129,42 +130,44 @@ export default function DashboardPage() {
   // ── No budget set ──
   if (!hasBudget && !editing) {
     return (
-      <div className="mx-auto max-w-lg px-5 py-20">
+      <div className="flex flex-1 items-center justify-center px-5 py-12 lg:py-24">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-dashed border-orange-200 bg-white p-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900"
+          className="w-full max-w-2xl rounded-3xl border border-orange-100 bg-white p-8 text-center shadow-2xl shadow-orange-500/5 dark:border-gray-800 dark:bg-gray-900 md:p-16"
         >
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-100 text-3xl dark:bg-orange-500/10">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-100 text-4xl dark:bg-orange-500/10">
             🎯
           </div>
-          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Set Your Budget</h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Define a shopping limit and track your spend in real-time.
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white md:text-4xl">Set Your Budget</h1>
+          <p className="mt-3 text-base text-gray-500 dark:text-gray-400">
+            Define a shopping limit and {APP_NAME} will track your spend in real-time,<br className="hidden md:block" /> helping you spend wiser and stay in control.
           </p>
-          <div className="mt-6 flex gap-2">
+          <div className="mx-auto mt-10 flex max-w-md gap-3">
             <div className="relative flex-1">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-gray-400">₹</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-gray-400">₹</span>
               <input
                 type="number" min="0" value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && saveBudget()}
                 placeholder="e.g. 5000"
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3.5 pl-8 pr-4 text-base font-semibold text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:placeholder-gray-500"
+                className="h-14 w-full rounded-2xl border-2 border-gray-100 bg-gray-50 pl-10 pr-4 text-lg font-bold text-gray-900 outline-none transition-all focus:border-orange-500 focus:bg-white dark:border-gray-800 dark:bg-gray-800 dark:text-white dark:placeholder-gray-600"
               />
             </div>
-            <button onClick={saveBudget} className="rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-700 active:scale-95">
-              Set
+            <button onClick={saveBudget} className="h-14 rounded-2xl bg-orange-600 px-8 font-bold text-white shadow-lg shadow-orange-600/20 transition-all hover:bg-orange-700 hover:shadow-orange-600/40 active:scale-95">
+              Get Started
             </button>
           </div>
-          {items.length > 0 && (
-            <p className="mt-4 text-sm text-amber-600 dark:text-amber-400">
-              You already have {formatINR(spent)} in your cart.
-            </p>
-          )}
-          <Link to="/shop" className="mt-5 inline-flex items-center gap-1.5 text-sm font-medium text-orange-600">
-            Browse products <ArrowRight size={14} />
-          </Link>
+          <div className="mt-8 flex flex-col items-center gap-4 border-t border-gray-100 pt-8 dark:border-gray-800">
+            {items.length > 0 && (
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                Current cart: <span className="font-bold">{formatINR(spent)}</span>
+              </p>
+            )}
+            <Link to="/shop" className="inline-flex items-center gap-2 text-sm font-bold text-orange-600 hover:text-orange-700">
+              Just browsing? Explore shop <ArrowRight size={16} />
+            </Link>
+          </div>
         </motion.div>
       </div>
     );
@@ -173,25 +176,25 @@ export default function DashboardPage() {
   // ── Edit budget inline ──
   if (editing) {
     return (
-      <div className="mx-auto max-w-lg px-5 py-8">
+      <div className="mx-auto flex max-w-[1440px] flex-1 items-center justify-center px-5 py-8">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-orange-200 bg-orange-50 p-6 dark:border-orange-800/40 dark:bg-orange-500/10"
+          className="w-full max-w-xl rounded-2xl border-2 border-orange-200 bg-orange-50 p-8 dark:border-orange-800/40 dark:bg-orange-500/10"
         >
-          <p className="mb-3 text-sm font-semibold text-orange-700 dark:text-orange-300">Update Your Budget</p>
-          <div className="flex items-center gap-2">
+          <p className="mb-4 text-lg font-bold text-orange-800 dark:text-orange-300 text-center">Update Your Shopping Budget</p>
+          <div className="flex items-center gap-3">
             <div className="relative flex-1">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-gray-400">₹</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-gray-400">₹</span>
               <input
                 autoFocus type="number" min="0" value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && saveBudget()}
-                className="w-full rounded-lg border border-gray-200 bg-white py-2.5 pl-8 pr-4 font-semibold text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                className="h-12 w-full rounded-xl border-2 border-gray-200 bg-white pl-10 pr-4 text-lg font-bold text-gray-900 outline-none focus:border-orange-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
               />
             </div>
-            <button onClick={saveBudget} className="rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-700">Save</button>
-            <button onClick={() => setEditing(false)} className="rounded-lg px-3 py-2.5 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">Cancel</button>
+            <button onClick={saveBudget} className="h-12 rounded-xl bg-orange-600 px-6 font-bold text-white hover:bg-orange-700">Save</button>
+            <button onClick={() => setEditing(false)} className="h-12 rounded-xl px-4 font-bold text-gray-500 hover:bg-gray-200/50 dark:hover:bg-gray-800">Cancel</button>
           </div>
         </motion.div>
       </div>
@@ -199,7 +202,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-6 pb-28 sm:px-6">
+    <div className="mx-auto w-full max-w-[1440px] px-4 py-6 pb-28 sm:px-6 lg:px-8">
       {/* Budget edit bar */}
       <div className="mb-6 flex items-center justify-between">
         <p className="text-sm text-gray-500 dark:text-gray-400">

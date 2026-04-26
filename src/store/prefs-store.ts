@@ -45,6 +45,6 @@ export const usePrefsStore = create<PrefsState>()(
 
       clearRecent: () => set({ recentlyViewed: [] }),
     }),
-    { name: "smartcart-prefs" }
+    { name: "vyapariq-prefs" }
   )
 );

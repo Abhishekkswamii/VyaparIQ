@@ -63,7 +63,7 @@ export const useBudgetStore = create<BudgetState>()(
       },
     }),
     {
-      name: "smartcart-budget",
+      name: "vyapariq-budget",
       partialize: (state) => ({
         budget: state.budget,
         totalBudget: state.totalBudget,

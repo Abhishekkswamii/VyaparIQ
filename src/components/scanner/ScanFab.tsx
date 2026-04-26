@@ -14,7 +14,7 @@ export default function ScanFab() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-white shadow-lg shadow-orange-600/30 transition-all hover:bg-orange-700 hover:scale-105 active:scale-95"
+        className="fixed bottom-24 left-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-white shadow-lg shadow-orange-600/30 transition-all hover:bg-orange-700 hover:scale-105 active:scale-95"
         aria-label="Scan barcode"
       >
         <Camera size={22} />

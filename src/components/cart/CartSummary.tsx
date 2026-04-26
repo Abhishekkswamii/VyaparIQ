@@ -112,18 +112,28 @@ export default function CartSummary() {
         </button>
       </div>
 
-      <button
-        onClick={async () => {
-          setCheckingOut(true);
-          await endSession();
-          close();
-          setCheckingOut(false);
-        }}
-        disabled={checkingOut}
-        className="mt-4 w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-[0.98] disabled:opacity-60"
-      >
-        {checkingOut ? "Processing…" : "Checkout"}
-      </button>
+      <div className="mt-4 flex flex-col gap-2">
+        <button
+          onClick={async () => {
+            setCheckingOut(true);
+            await endSession();
+            close();
+            setCheckingOut(false);
+          }}
+          disabled={checkingOut}
+          className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/25 transition-all hover:from-orange-600 hover:to-amber-600 active:scale-[0.98] disabled:opacity-60"
+        >
+          {checkingOut ? "Processing…" : "Proceed to Checkout"}
+        </button>
+
+        <Link
+          to="/cart"
+          onClick={close}
+          className="flex w-full items-center justify-center rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          View Full Cart
+        </Link>
+      </div>
     </div>
   );
 }

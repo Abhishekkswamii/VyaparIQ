@@ -55,7 +55,7 @@ shell-ai:
 	docker-compose exec ai-service bash
 
 shell-postgres:
-	docker-compose exec postgres psql -U $${POSTGRES_USER:-smartcart} -d $${POSTGRES_DB:-smartcart}
+	docker-compose exec postgres psql -U $${POSTGRES_USER:-vyapariq} -d $${POSTGRES_DB:-vyapariq}
 
 shell-redis:
 	docker-compose exec redis redis-cli

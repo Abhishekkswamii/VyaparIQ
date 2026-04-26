@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck, Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
+import { APP_NAME, APP_TAGLINE } from "@/constants/branding";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -36,8 +37,8 @@ export default function AdminLogin() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg shadow-orange-500/30">
             <ShieldCheck size={32} className="text-white" />
           </div>
-          <h1 className="text-2xl font-extrabold text-white">VyaparIQ Admin Console</h1>
-          <p className="mt-1 text-sm text-gray-400">Shop smarter. Spend wiser.</p>
+          <h1 className="text-2xl font-extrabold text-white">{APP_NAME} Admin Console</h1>
+          <p className="mt-1 text-sm text-gray-400">{APP_TAGLINE}</p>
         </div>
 
         {/* Card */}
@@ -120,7 +121,7 @@ export default function AdminLogin() {
         </form>
 
         <p className="mt-6 text-center text-xs text-gray-600">
-          Admin access only · VyaparIQ
+          Admin access only · {APP_NAME}
         </p>
       </div>
     </div>

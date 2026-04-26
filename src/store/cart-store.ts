@@ -20,6 +20,7 @@ interface CartState {
   incrementQuantity: (productId: string) => void;
   decrementQuantity: (productId: string) => void;
   clearCart: () => void;
+  replaceCart: (items: CartItem[]) => void;
   syncToBackend: () => Promise<void>;
 
   // Backward-compatible computed helpers
@@ -64,6 +65,10 @@ export const useCartStore = create<CartState>()(
             : [...state.items, { ...product, quantity: 1, addedBy }];
           return { items, ...derive(items) };
         });
+        
+        // Auto-open drawer on add
+        import("./cart-ui-store").then(m => m.useCartUIStore.getState().openDrawer());
+        
         scheduleSync(() => get().syncToBackend());
       },
 
@@ -121,6 +126,10 @@ export const useCartStore = create<CartState>()(
         scheduleSync(() => get().syncToBackend());
       },
 
+      replaceCart: (items) => {
+        set({ items, ...derive(items) });
+      },
+
       syncToBackend: async () => {
         try {
           await fetch("/api/cart", {
@@ -142,7 +151,7 @@ export const useCartStore = create<CartState>()(
       totalPrice: () => get().items.reduce((s, i) => s + i.price * i.quantity, 0),
     }),
     {
-      name: "smartcart-cart",
+      name: "vyapariq-cart",
       partialize: (state) => ({
         items: state.items,
         totalAmount: state.totalAmount,

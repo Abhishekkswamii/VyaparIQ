@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Package, Users, ShoppingBag, TrendingUp, ArrowRight } from "lucide-react";
 import { useAdminStore } from "@/store/admin-store";
 import { formatINR } from "@/lib/format";
+import { APP_NAME } from "@/constants/branding";
 
 interface StatCardProps {
   label: string;
@@ -44,7 +45,7 @@ export default function AdminDashboard() {
       <div className="mb-8">
         <h1 className="text-2xl font-extrabold text-white">Dashboard</h1>
         <p className="mt-1 text-sm text-gray-400">
-          VyaparIQ platform overview
+          {APP_NAME} platform overview
         </p>
       </div>
 

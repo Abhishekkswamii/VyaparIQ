@@ -23,13 +23,13 @@ ALTER TABLE products
 
 -- ── 3. Promote an existing user to admin ─────────────────────────────────────
 -- After registering via /api/auth/register, run:
---   UPDATE users SET role = 'admin' WHERE email = 'admin@smartcart.com';
+--   UPDATE users SET role = 'admin' WHERE email = 'admin@vyapariq.com';
 --
 -- Or insert a dedicated admin (password = 'Admin@1234', bcrypt hash below):
 -- INSERT INTO users (name, email, password_hash, role)
 -- VALUES (
 --   'Admin',
---   'admin@smartcart.com',
+--   'admin@vyapariq.com',
 --   '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi',
 --   'admin'
 -- )

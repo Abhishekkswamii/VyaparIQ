@@ -1,14 +1,51 @@
--- SmartCart Database Schema
+-- VyaparIQ Database Schema
+-- Authoritative single source of truth — no separate migration needed.
+-- Safe to re-run (all CREATE/ALTER use IF NOT EXISTS / DO-EXCEPTION guards).
 
 -- ── Users ────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
-    id            SERIAL PRIMARY KEY,
-    name          VARCHAR(100)  NOT NULL,
+    id            SERIAL        PRIMARY KEY,
+    name          VARCHAR(100)  NOT NULL DEFAULT '',
+    first_name    VARCHAR(100)  NOT NULL DEFAULT '',
+    last_name     VARCHAR(100)  NOT NULL DEFAULT '',
     email         VARCHAR(255)  NOT NULL UNIQUE,
-    password_hash VARCHAR(255)  NOT NULL,
+    password_hash VARCHAR(255),              -- NULL for Google OAuth users
+    provider      VARCHAR(20)   NOT NULL DEFAULT 'local',
+    role          VARCHAR(20)   NOT NULL DEFAULT 'user',
     created_at    TIMESTAMP     DEFAULT NOW(),
     updated_at    TIMESTAMP     DEFAULT NOW()
 );
+
+-- Ensure columns exist on pre-existing DBs (idempotent guards)
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN first_name VARCHAR(100) NOT NULL DEFAULT '';
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN last_name VARCHAR(100) NOT NULL DEFAULT '';
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN provider VARCHAR(20) NOT NULL DEFAULT 'local';
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE users ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT 'user';
+EXCEPTION WHEN duplicate_column THEN NULL; END $$;
+
+-- Make password_hash nullable so Google users can be stored
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+
+-- Backfill first_name / last_name for rows created before this migration
+UPDATE users
+SET
+  first_name = TRIM(SPLIT_PART(COALESCE(name, email), ' ', 1)),
+  last_name  = CASE
+                 WHEN POSITION(' ' IN COALESCE(name, '')) > 0
+                 THEN TRIM(SUBSTRING(name FROM POSITION(' ' IN name) + 1))
+                 ELSE ''
+               END
+WHERE first_name = '';
 
 -- ── Products ─────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS products (
@@ -68,9 +105,10 @@ CREATE TABLE IF NOT EXISTS expense_logs (
 );
 
 -- ── Indexes ──────────────────────────────────────────────────────
-CREATE INDEX IF NOT EXISTS idx_cart_items_user        ON cart_items(user_id);
-CREATE INDEX IF NOT EXISTS idx_shopping_sessions_user ON shopping_sessions(user_id);
-CREATE INDEX IF NOT EXISTS idx_expense_logs_user      ON expense_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_expense_logs_session   ON expense_logs(session_id);
-CREATE INDEX IF NOT EXISTS idx_products_category      ON products(category);
-CREATE INDEX IF NOT EXISTS idx_products_barcode       ON products(barcode);
+CREATE INDEX IF NOT EXISTS idx_users_email             ON users(email);
+CREATE INDEX IF NOT EXISTS idx_cart_items_user         ON cart_items(user_id);
+CREATE INDEX IF NOT EXISTS idx_shopping_sessions_user  ON shopping_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_expense_logs_user       ON expense_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_expense_logs_session    ON expense_logs(session_id);
+CREATE INDEX IF NOT EXISTS idx_products_category       ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_barcode        ON products(barcode);

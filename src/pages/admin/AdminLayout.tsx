@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { useAdminStore } from "@/store/admin-store";
+import { APP_NAME } from "@/constants/branding";
 
 const NAV = [
   { to: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -25,7 +26,7 @@ function Sidebar({ onClose }: { onClose?: () => void }) {
           <ShieldCheck size={16} className="text-white" />
         </div>
         <div>
-          <p className="text-sm font-extrabold text-white leading-none">VyaparIQ</p>
+          <p className="text-sm font-extrabold text-white leading-none">{APP_NAME}</p>
           <p className="text-[10px] font-semibold uppercase tracking-widest text-orange-400">
             Admin
           </p>

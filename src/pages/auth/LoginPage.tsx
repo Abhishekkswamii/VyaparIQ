@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ShoppingCart, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
+import { APP_NAME, APP_TAGLINE } from "@/constants/branding";
 
 function GoogleIcon() {
   return (
@@ -77,7 +78,7 @@ export default function LoginPage() {
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
               <ShoppingCart size={26} className="text-white" />
             </div>
-            <span className="text-3xl font-extrabold tracking-tight">VyaparIQ</span>
+            <span className="text-3xl font-extrabold tracking-tight">{APP_NAME}</span>
           </div>
           <h2 className="text-4xl font-extrabold leading-snug">
             Shop smarter.<br />Spend wiser.
@@ -105,19 +106,19 @@ export default function LoginPage() {
       </motion.div>
 
       {/* Right panel */}
-      <div className="flex flex-1 items-center justify-center px-6 py-12">
+      <div className="flex flex-1 items-center justify-center px-6 py-12 lg:px-16">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="w-full max-w-md"
+          className="mx-auto w-full max-w-lg"
         >
           <div className="mb-8">
             <div className="mb-5 flex items-center gap-2 lg:hidden">
               <ShoppingCart size={26} className="text-orange-500" />
-              <span className="text-xl font-extrabold text-gray-900 dark:text-white">VyaparIQ</span>
+              <span className="text-xl font-extrabold text-gray-900 dark:text-white">{APP_NAME}</span>
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Welcome to VyaparIQ</h1>
+            <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Welcome to {APP_NAME}</h1>
             <p className="mt-2 text-gray-500 dark:text-gray-400">Sign in to your account to continue</p>
           </div>
 
@@ -238,7 +239,7 @@ export default function LoginPage() {
           </div>
 
           <a
-            href="http://localhost:5001/api/auth/google"
+            href="/api/auth/google"
             className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:bg-gray-50 hover:shadow dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
           >
             <GoogleIcon />
@@ -246,7 +247,7 @@ export default function LoginPage() {
           </a>
 
           <p className="mt-5 text-center text-xs text-gray-400 dark:text-gray-600">
-            VyaparIQ · Shop smarter. Spend wiser.
+            {APP_NAME} · {APP_TAGLINE}
           </p>
         </motion.div>
       </div>

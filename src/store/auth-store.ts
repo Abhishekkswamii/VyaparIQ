@@ -23,14 +23,32 @@ interface AuthState {
   signup: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
   /** Set auth state from a Google OAuth JWT (decoded payload) */
   setFromOAuth: (token: string, payload: AuthUser & { exp?: number }) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+}
+
+// ── Safe JSON helper ──────────────────────────────────────────────────────────
+// Prevents "Unexpected end of JSON input" when the server returns an empty
+// body, an HTML error page, or any non-JSON response.
+
+async function safeJson(res: Response): Promise<Record<string, unknown>> {
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    // Server returned HTML, plain text, or nothing — construct a fallback object
+    const text = await res.text().catch(() => "");
+    return { error: text || res.statusText || "Unexpected server response" };
+  }
+  try {
+    return await res.json();
+  } catch {
+    return { error: "Invalid JSON received from server" };
+  }
 }
 
 // ── Store ─────────────────────────────────────────────────────────────────────
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       token: null,
       isAuthenticated: false,
@@ -41,10 +59,10 @@ export const useAuthStore = create<AuthState>()(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Login failed");
-        set({ user: data.user, token: data.token, isAuthenticated: true });
-        return data.user.role as "user" | "admin";
+        const data = await safeJson(res);
+        if (!res.ok) throw new Error((data.error as string) ?? "Login failed");
+        set({ user: data.user as AuthUser, token: data.token as string, isAuthenticated: true });
+        return (data.user as AuthUser).role;
       },
 
       signup: async (firstName, lastName, email, password) => {
@@ -53,11 +71,12 @@ export const useAuthStore = create<AuthState>()(
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ firstName, lastName, email, password }),
         });
-        const data = await res.json();
+        const data = await safeJson(res);
         if (!res.ok) {
-          throw new Error(data.errors?.[0]?.msg ?? data.error ?? "Registration failed");
+          const errs = data.errors as Array<{ msg: string }> | undefined;
+          throw new Error(errs?.[0]?.msg ?? (data.error as string) ?? "Registration failed");
         }
-        set({ user: data.user, token: data.token, isAuthenticated: true });
+        set({ user: data.user as AuthUser, token: data.token as string, isAuthenticated: true });
       },
 
       setFromOAuth: (token, payload) => {
@@ -72,7 +91,21 @@ export const useAuthStore = create<AuthState>()(
         set({ user, token, isAuthenticated: true });
       },
 
-      logout: () => set({ user: null, token: null, isAuthenticated: false }),
+      logout: async () => {
+        const { token } = get();
+        // Attempt to blacklist the token in Redis — best-effort, don't block UI
+        if (token) {
+          try {
+            await fetch("/api/auth/logout", {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}` },
+            });
+          } catch {
+            // Network error on logout — still clear local state
+          }
+        }
+        set({ user: null, token: null, isAuthenticated: false });
+      },
     }),
     {
       name: "vyapariq-auth",

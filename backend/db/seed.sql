@@ -1,4 +1,4 @@
--- SmartCart Seed Data: 30+ products across Grocery, Snacks, Essentials
+-- VyaparIQ Seed Data: 30+ products across Grocery, Snacks, Essentials
 
 INSERT INTO products (id, name, price, category, barcode, image_url, cheaper_alternative_id) VALUES
 
@@ -40,7 +40,20 @@ INSERT INTO products (id, name, price, category, barcode, image_url, cheaper_alt
 (31, 'Parachute Coconut Oil (200 ml)',   95.00, 'Essentials', '8904067700210', NULL, 32),
 (32, 'KLF Coconut Oil (200 ml)',         75.00, 'Essentials', '8906002480300', NULL, NULL),
 (33, 'Scotch-Brite Scrub Pad (3 pk)',    55.00, 'Essentials', '8901030640200', NULL, NULL),
-(34, 'Garbage Bags (30 pk)',             80.00, 'Essentials', '8906002480400', NULL, NULL)
+(34, 'Garbage Bags (30 pk)',             80.00, 'Essentials', '8906002480400', NULL, NULL);
+
+-- ── Admin User ──────────────────────────────────────────────────
+INSERT INTO users (name, first_name, last_name, email, password_hash, role, provider)
+VALUES (
+  'Admin',
+  'Admin',
+  'User',
+  'admin@vyapariq.com',
+  '$2a$10$7Mt1hH3HJm5AVAUuPIst6e2YRfe6rFGIwNvTAjQXlH6XeldFU.V0.',
+  'admin',
+  'local'
+)
+ON CONFLICT (email) DO UPDATE SET role = 'admin';
 
 ON CONFLICT (id) DO NOTHING;
 

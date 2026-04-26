@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
+import { APP_NAME } from "@/constants/branding";
 
 interface SidebarProps {
   isMobileOpen: boolean;
@@ -57,7 +58,7 @@ function SidebarInner({ closeMobile }: { closeMobile: () => void }) {
           <ShoppingBag size={18} className="text-white" />
         </div>
         <span className="text-lg font-extrabold tracking-tight text-white">
-          VyaparIQ
+          {APP_NAME}
         </span>
       </div>
 

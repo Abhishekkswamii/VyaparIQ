@@ -72,6 +72,6 @@ export const useFamilyStore = create<FamilyState>()(
 
       setActiveMember: (id: string) => set({ activeMemberId: id }),
     }),
-    { name: "smartcart-family" }
+    { name: "vyapariq-family" }
   )
 );

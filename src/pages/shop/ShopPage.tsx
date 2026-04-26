@@ -181,54 +181,54 @@ export default function ShopPage() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
       {/* Search bar */}
-      <div className="border-b border-gray-200 bg-white px-4 py-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="mx-auto flex max-w-7xl items-center gap-3">
+      <div className="border-b border-gray-200 bg-white/80 backdrop-blur-md px-4 py-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/80">
+        <div className="mx-auto flex max-w-[1440px] items-center gap-3">
           <div className="relative flex-1">
             <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+              size={17}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
             />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search groceries, dairy, fruits…"
-              className="w-full rounded border border-orange-400 bg-white py-2.5 pl-9 pr-10 text-sm text-gray-900 outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-orange-500"
+              className="h-12 w-full rounded-2xl border-2 border-gray-100 bg-gray-50 pl-11 pr-10 text-sm font-medium text-gray-900 outline-none transition-all focus:border-orange-500 focus:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-orange-500"
             />
             {query && (
               <button
                 onClick={() => setQuery("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
               >
-                <X size={15} />
+                <X size={16} />
               </button>
             )}
           </div>
-          <button className="rounded bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500">
+          <button className="h-12 hidden sm:block rounded-2xl bg-orange-600 px-8 text-sm font-bold text-white shadow-lg shadow-orange-600/20 hover:bg-orange-700 active:scale-95 transition-all">
             Search
           </button>
           <button
             onClick={() => setShowMobileFilter(true)}
-            className="flex items-center gap-1.5 rounded border border-gray-300 px-3 py-2.5 text-sm font-medium text-gray-700 hover:border-orange-400 hover:text-orange-500 lg:hidden dark:border-gray-700 dark:text-gray-300 dark:hover:border-orange-500 dark:hover:text-orange-400"
+            className="flex h-12 items-center gap-2 rounded-2xl border-2 border-gray-100 px-4 text-sm font-bold text-gray-700 hover:border-orange-400 hover:text-orange-500 lg:hidden dark:border-gray-700 dark:text-gray-300 dark:hover:border-orange-500 dark:hover:text-orange-400"
           >
-            <SlidersHorizontal size={15} />
+            <SlidersHorizontal size={16} />
             Filters
           </button>
         </div>
       </div>
 
       {/* Category pills */}
-      <div className="border-b border-gray-200 bg-white px-4 py-2.5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: "none" }}>
+      <div className="border-b border-gray-200 bg-white/50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/50">
+        <div className="mx-auto max-w-[1440px]">
+          <div className="flex gap-2.5 overflow-x-auto pb-0.5 scrollbar-hide">
             {ALL_CATEGORIES.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setCategory(cat)}
-                className={`shrink-0 rounded-full px-4 py-1 text-sm font-medium transition-all ${
+                className={`shrink-0 rounded-xl px-5 py-1.5 text-xs font-bold transition-all ${
                   category === cat
-                    ? "bg-orange-500 text-white shadow-sm"
-                    : "border border-gray-300 bg-white text-gray-600 hover:border-orange-400 hover:text-orange-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-orange-500 dark:hover:text-orange-400"
+                    ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                    : "border-2 border-gray-100 bg-white text-gray-500 hover:border-orange-200 hover:text-orange-500 dark:border-gray-800 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-orange-500 dark:hover:text-orange-400"
                 }`}
               >
                 {cat}
@@ -238,7 +238,7 @@ export default function ShopPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-4 pb-32">
+      <div className="mx-auto max-w-[1440px] px-4 py-6 pb-32 sm:px-6 lg:px-8">
         <div className="flex gap-4">
           {/* Desktop sidebar */}
           <aside className="hidden w-52 shrink-0 lg:block">

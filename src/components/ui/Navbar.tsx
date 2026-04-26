@@ -5,6 +5,7 @@ import { useCartStore } from "@/store/cart-store";
 import { useThemeStore } from "@/store/theme-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
 import { useBudgetStore } from "@/store/budget-store";
+import { APP_NAME } from "@/constants/branding";
 
 export default function Navbar() {
   const totalItems = useCartStore((s) => s.totalItems);
@@ -40,7 +41,7 @@ export default function Navbar() {
         <Link to="/shop" className="flex items-center gap-2">
           <span className="text-2xl">🛒</span>
           <span className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-            VyaparIQ
+            {APP_NAME}
           </span>
         </Link>
 

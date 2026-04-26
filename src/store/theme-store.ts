@@ -7,7 +7,7 @@ interface ThemeState {
 
 const getInitialTheme = (): boolean => {
   try {
-    const stored = localStorage.getItem("smartcart-theme");
+    const stored = localStorage.getItem("vyapariq-theme");
     if (stored !== null) return stored === "dark";
   } catch {}
   return false;
@@ -21,7 +21,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     document.documentElement.classList.toggle("dark", next);
     set({ isDark: next });
     try {
-      localStorage.setItem("smartcart-theme", next ? "dark" : "light");
+      localStorage.setItem("vyapariq-theme", next ? "dark" : "light");
     } catch {}
   },
 }));

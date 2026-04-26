@@ -1,6 +1,6 @@
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Migration: Google OAuth + firstName/lastName schema
--- Run: psql "postgresql://smartcart:smartcart_secret@localhost:5433/smartcart" \
+-- Run: psql "postgresql://vyapariq:vyapariq_secret@localhost:5433/vyapariq" \
 --        -f backend/db/oauth.sql
 -- Idempotent — safe to re-run.
 -- ──────────────────────────────────────────────────────────────────────────────

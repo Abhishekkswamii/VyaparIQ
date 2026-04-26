@@ -5,11 +5,16 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --nav-height: 64px;
+    --cat-bar-height: 48px;
+  }
   html {
     @apply scroll-smooth antialiased;
   }
   body {
     @apply bg-gray-50 text-gray-900;
+    padding-bottom: env(safe-area-inset-bottom);
   }
   .dark body {
     @apply bg-gray-950 text-gray-100;
