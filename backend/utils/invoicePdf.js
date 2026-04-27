@@ -111,16 +111,16 @@ function generateInvoicePdf(data) {
     y += 10;
 
     const colWidths = [
-      Math.round(W * 0.38), // Item name
-      Math.round(W * 0.18), // Category
+      Math.round(W * 0.36), // Item name
+      Math.round(W * 0.16), // Category
       Math.round(W * 0.10), // Qty
-      Math.round(W * 0.17), // Unit Price
-      Math.round(W * 0.17), // Total
+      Math.round(W * 0.19), // Unit Price
+      Math.round(W * 0.19), // Total
     ];
-    const colXs = colWidths.reduce(
-      (acc, w, i) => [...acc, (acc[i] || ml) + (i === 0 ? 0 : colWidths[i - 1])],
-      [ml]
-    ).slice(0, 5);
+    // Cumulative x positions — each column starts where the previous ends
+    const colXs = [];
+    let cx = ml;
+    for (const w of colWidths) { colXs.push(cx); cx += w; }
 
     // Header row
     doc.rect(ml, y, W, 20).fill(BRAND_DARK);
@@ -187,15 +187,16 @@ function generateInvoicePdf(data) {
     addTotalRow("TOTAL (incl. all taxes)", `\u20B9${parseFloat(data.total || 0).toFixed(2)}`, true, BRAND_ORANGE);
 
     // ── Footer ───────────────────────────────────────────────────────────────
-    const footerY = doc.page.height - 70;
-    doc.rect(0, footerY, doc.page.width, 70).fill(BRAND_DARK);
+    // Draw inline (not pinned to page bottom) to avoid triggering extra pages.
+    y += 24;
+    doc.rect(ml, y, W, 58).fill(BRAND_DARK);
 
     doc.fillColor(BRAND_ORANGE).font("Helvetica-Bold").fontSize(11)
-       .text("Thank you for shopping with VyaparIQ!", 0, footerY + 16, { align: "center" });
+       .text("Thank you for shopping with VyaparIQ!", ml, y + 12, { width: W, align: "center" });
     doc.fillColor("#AAAAAA").font("Helvetica").fontSize(8)
-       .text("This is a computer-generated invoice and does not require a signature.", 0, footerY + 34, { align: "center" });
-    doc.fillColor("#666666").font("Helvetica").fontSize(7)
-       .text(`Generated on ${new Date().toLocaleString("en-IN")}`, 0, footerY + 50, { align: "center" });
+       .text("This is a computer-generated invoice and does not require a signature.", ml, y + 30, { width: W, align: "center" });
+    doc.fillColor("#888888").font("Helvetica").fontSize(7)
+       .text(`Generated on ${new Date().toLocaleString("en-IN")}`, ml, y + 44, { width: W, align: "center" });
 
     doc.end();
   });
