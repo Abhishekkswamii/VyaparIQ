@@ -59,7 +59,8 @@ export default function AdminDashboard() {
   // ── SSE listener ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!token) return;
-    const es = new EventSource(`/api/admin/events?token=${token}`);
+    const backendBase = import.meta.env.VITE_BACKEND_URL ?? "";
+    const es = new EventSource(`${backendBase}/api/admin/events?token=${token}`);
     esRef.current = es;
 
     es.addEventListener("connected", () => setLiveStatus("live"));
