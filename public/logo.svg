@@ -1,0 +1,72 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="orangeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF8A00"/>
+      <stop offset="100%" stop-color="#FF5A00"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Main rounded badge -->
+  <path d="M150 130
+           C110 150,90 220,110 310
+           C130 390,190 430,256 430
+           C322 430,382 390,402 310
+           C422 220,402 150,362 130
+           C332 115,292 105,256 105
+           C220 105,180 115,150 130Z"
+        fill="url(#orangeGrad)" filter="url(#shadow)"/>
+
+  <!-- Brain top bumps -->
+  <circle cx="190" cy="150" r="45" fill="url(#orangeGrad)"/>
+  <circle cx="250" cy="120" r="55" fill="url(#orangeGrad)"/>
+  <circle cx="320" cy="150" r="45" fill="url(#orangeGrad)"/>
+
+  <!-- Cart outline -->
+  <path d="M145 220
+           C165 220,175 235,180 255
+           L205 325
+           C210 340,220 350,240 350
+           H315
+           C335 350,350 338,355 320
+           L375 250
+           C380 232,370 220,350 220
+           Z"
+        fill="none"
+        stroke="white"
+        stroke-width="20"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Handle -->
+  <path d="M125 185 H155" stroke="white" stroke-width="20" stroke-linecap="round"/>
+
+  <!-- Wheels -->
+  <circle cx="220" cy="385" r="20" fill="white"/>
+  <circle cx="320" cy="385" r="20" fill="white"/>
+
+  <!-- Rupee symbol -->
+  <text x="238" y="305"
+        font-size="82"
+        font-family="Arial, sans-serif"
+        font-weight="700"
+        fill="white">&#8377;</text>
+
+  <!-- Circuit lines -->
+  <line x1="205" y1="130" x2="205" y2="195" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  <line x1="256" y1="110" x2="256" y2="190" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  <line x1="307" y1="130" x2="307" y2="195" stroke="white" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Circuit nodes -->
+  <circle cx="205" cy="125" r="10" fill="white"/>
+  <circle cx="256" cy="105" r="10" fill="white"/>
+  <circle cx="307" cy="125" r="10" fill="white"/>
+
+  <!-- Branches -->
+  <path d="M205 165 L175 185" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M307 165 L337 185" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="170" cy="190" r="8" fill="white"/>
+  <circle cx="342" cy="190" r="8" fill="white"/>
+</svg>

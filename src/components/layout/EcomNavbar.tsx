@@ -14,6 +14,7 @@ import {
   X,
   UserCircle,
 } from "lucide-react";
+import VyaparIQLogo from "@/components/ui/VyaparIQLogo";
 import { useCartStore } from "@/store/cart-store";
 import { useCartUIStore } from "@/store/cart-ui-store";
 import { useBudgetSummary } from "@/hooks/useBudgetSummary";
@@ -96,9 +97,7 @@ export default function EcomNavbar({ searchQuery, onSearchChange }: EcomNavbarPr
           to="/dashboard"
           className="flex shrink-0 items-center gap-2 mr-2"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 shadow-md shadow-orange-500/30">
-            <ShoppingCart size={18} className="text-white" />
-          </div>
+          <VyaparIQLogo size={36} className="shadow-md shadow-orange-500/30" />
           <span className="hidden text-xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:block">
             Vyapar<span className="text-orange-500">IQ</span>
           </span>

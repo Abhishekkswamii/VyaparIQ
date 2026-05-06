@@ -3,6 +3,17 @@
 // Pure DB/Redis operations — no Gemini, no business logic, no fallbacks.
 // Each tool takes a context { db, redis } and typed params.
 
+const { generateInvoicePdf }        = require("../utils/invoicePdf");
+const { uploadInvoicePdf }          = require("../utils/gcsUpload");
+const adminEvents                   = require("../utils/adminEvents");
+const { sendOrderConfirmationEmail } = require("../utils/mailer");
+
+function makeInvoiceId(orderId) {
+  const ts  = Date.now().toString(36).toUpperCase();
+  const seq = String(orderId).padStart(5, "0");
+  return `INV-${seq}-${ts}`;
+}
+
 function toFloat(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
@@ -198,6 +209,62 @@ async function checkout({ db, redis }, { userId }) {
     await client.query("DELETE FROM cart_items WHERE user_id = $1", [userId]);
     await client.query("COMMIT");
     try { await redis.del(`cart:${userId}`); } catch {}
+
+    // ── Post-order: invoice + email (best-effort, outside transaction) ──────
+    try {
+      const { rows: userRows } = await db.query(
+        "SELECT first_name, last_name, email FROM users WHERE id = $1", [userId]
+      );
+      const u = userRows[0] || {};
+
+      const invoiceId = makeInvoiceId(order.id);
+      const pdfBuffer = await generateInvoicePdf({
+        invoiceId,
+        orderId:       order.id,
+        orderDate:     order.created_at,
+        orderStatus:   order.status,
+        paymentMethod: "cod",
+        user: {
+          name:  `${u.first_name || ""} ${u.last_name || ""}`.trim() || "Customer",
+          email: u.email || "",
+        },
+        address,
+        items:    lineItems,
+        subtotal,
+        discount: 0,
+        total:    subtotal,
+      });
+
+      const { storagePath, fileSize } = await uploadInvoicePdf(userId, order.id, pdfBuffer);
+
+      await db.query(
+        `INSERT INTO invoices
+           (invoice_id, order_id, user_id, storage_path, file_size, invoice_status)
+         VALUES ($1, $2, $3, $4, $5, 'generated')`,
+        [invoiceId, order.id, userId, storagePath, fileSize]
+      );
+
+      adminEvents.emit("invoice_ready", { orderId: order.id, invoiceId });
+
+      if (u.email) {
+        await sendOrderConfirmationEmail({
+          to:        u.email,
+          firstName: u.first_name || "there",
+          order: {
+            id:             order.id,
+            created_at:     order.created_at,
+            payment_method: "cod",
+            subtotal,
+            discount:       0,
+            total_amount:   subtotal,
+            address,
+            items:          lineItems,
+          },
+        });
+      }
+    } catch (postErr) {
+      console.error("[ai:checkout] invoice/email failed (non-fatal):", postErr.message);
+    }
 
     return { orderId: order.id, total: subtotal, itemCount: lineItems.length };
   } catch (err) {

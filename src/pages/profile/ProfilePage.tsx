@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  User, Phone, Mail, MapPin, Plus, Pencil, Trash2, Star, Check, X, ChevronDown,
+  User, Phone, Mail, MapPin, Plus, Pencil, Trash2, Star, Check, X, ChevronDown, AlertTriangle,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
+import { useNavigate } from "react-router-dom";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -222,6 +223,30 @@ export default function ProfilePage() {
 
   const [showAddrModal, setShowAddrModal] = useState(false);
   const [editingAddr, setEditingAddr] = useState<Address | undefined>();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const logout = useAuthStore((s) => s.logout);
+  const navigate = useNavigate();
+
+  // ── Delete account ──────────────────────────────────────────────────────────
+
+  async function handleDeleteAccount() {
+    if (!token || deleteConfirmText !== "DELETE") return;
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/auth/account", {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        logout();
+        navigate("/login", { replace: true });
+      }
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   // ── Fetch data ────────────────────────────────────────────────────────────
 
@@ -511,6 +536,83 @@ export default function ProfilePage() {
           </div>
         )}
       </section>
+
+      {/* ── Danger Zone ──────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-3xl">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900/50 dark:bg-red-950/20">
+          <div className="mb-4 flex items-center gap-2">
+            <AlertTriangle size={18} className="text-red-500" />
+            <h3 className="text-sm font-bold uppercase tracking-wider text-red-600 dark:text-red-400">Danger Zone</h3>
+          </div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-gray-900 dark:text-white">Delete Account</p>
+              <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                Permanently delete your account and all associated data. This cannot be undone.
+              </p>
+            </div>
+            <button
+              onClick={() => { setShowDeleteDialog(true); setDeleteConfirmText(""); }}
+              className="shrink-0 rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
+            >
+              Delete Account
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Delete Confirmation Dialog ──────────────────────────────────── */}
+      <AnimatePresence>
+        {showDeleteDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-gray-900"
+            >
+              <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-4 dark:border-gray-800">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40">
+                  <AlertTriangle size={18} className="text-red-500" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Delete your account?</h3>
+              </div>
+              <div className="px-6 py-5">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  This will <strong className="text-red-500">permanently delete</strong> your account and all data including orders, addresses, budget settings, and shopping history.
+                </p>
+                <div className="mt-4 rounded-xl bg-red-50 p-3 dark:bg-red-950/30">
+                  <p className="mb-2 text-xs font-semibold text-red-600 dark:text-red-400">
+                    Type <strong>DELETE</strong> to confirm
+                  </p>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                    placeholder="Type DELETE here"
+                    className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-mono outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 dark:border-red-800 dark:bg-gray-800 dark:text-white"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 border-t border-gray-100 px-6 py-4 dark:border-gray-800">
+                <button
+                  onClick={() => setShowDeleteDialog(false)}
+                  className="flex-1 rounded-xl border border-gray-200 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteConfirmText !== "DELETE" || deleting}
+                  className="flex-1 rounded-xl bg-red-500 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-40"
+                >
+                  {deleting ? "Deleting…" : "Yes, Delete Everything"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Address Modal ─────────────────────────────────────────────────── */}
       <AnimatePresence>

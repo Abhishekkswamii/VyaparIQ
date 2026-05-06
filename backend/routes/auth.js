@@ -3,6 +3,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const { body, validationResult } = require("express-validator");
+const crypto = require("crypto");
+const { sendPasswordResetEmail, sendGoogleAccountEmail, sendAccountDeletionEmail } = require("../utils/mailer");
+const { authenticateToken } = require("../middleware/auth");
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "change_me_in_production";
@@ -175,6 +178,121 @@ router.post("/logout", async (req, res, next) => {
     }
 
     res.json({ message: "Logged out successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /api/auth/forgot-password ───────────────────────────────────────────
+
+router.post(
+  "/forgot-password",
+  [body("email").isEmail().normalizeEmail().withMessage("Valid email required")],
+  async (req, res, next) => {
+    try {
+      const errs = validationResult(req);
+      if (!errs.isEmpty()) return res.status(400).json({ error: errs.array()[0].msg });
+
+      const db    = req.app.get("db");
+      const redis = req.app.get("redis");
+      const { email } = req.body;
+
+      const { rows } = await db.query(
+        "SELECT id, first_name, provider FROM users WHERE email = $1",
+        [email]
+      );
+
+      // Always respond success — never reveal whether email exists
+      if (rows.length === 0) {
+        return res.json({ message: "If that email exists, a reset link has been sent." });
+      }
+
+      // Google OAuth user — send a helpful notice instead of silently skipping
+      if (rows[0].provider !== "local") {
+        try {
+          await sendGoogleAccountEmail({ to: email, firstName: rows[0].first_name || "there" });
+        } catch (e) { console.error("[mailer] google-account email failed:", e.message); }
+        return res.json({ message: "If that email exists, a reset link has been sent." });
+      }
+
+      const user  = rows[0];
+      const token = crypto.randomBytes(32).toString("hex");
+
+      // Store token in Redis for 1 hour
+      await redis.set(`pwd_reset:${token}`, String(user.id), "EX", 3600);
+
+      const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
+
+      await sendPasswordResetEmail({ to: email, firstName: user.first_name, resetUrl });
+
+      res.json({ message: "If that email exists, a reset link has been sent." });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/auth/reset-password ────────────────────────────────────────────
+
+router.post(
+  "/reset-password",
+  [
+    body("token").notEmpty().withMessage("Token is required"),
+    body("password").isLength({ min: 6 }).withMessage("Password must be at least 6 characters"),
+  ],
+  async (req, res, next) => {
+    try {
+      const errs = validationResult(req);
+      if (!errs.isEmpty()) return res.status(400).json({ error: errs.array()[0].msg });
+
+      const db    = req.app.get("db");
+      const redis = req.app.get("redis");
+      const { token, password } = req.body;
+
+      const userId = await redis.get(`pwd_reset:${token}`);
+      if (!userId) {
+        return res.status(400).json({ error: "Reset link is invalid or has expired." });
+      }
+
+      const hash = await bcrypt.hash(password, SALT_ROUNDS);
+      await db.query("UPDATE users SET password_hash = $1 WHERE id = $2", [hash, userId]);
+
+      // Invalidate token immediately after use
+      await redis.del(`pwd_reset:${token}`);
+
+      res.json({ message: "Password reset successfully. You can now sign in." });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── DELETE /api/auth/account ─────────────────────────────────────────────────
+
+router.delete("/account", authenticateToken, async (req, res, next) => {
+  try {
+    const db = req.app.get("db");
+    const userId = req.user.id;
+
+    // Fetch user details before deletion (for farewell email)
+    const { rows } = await db.query(
+      "SELECT first_name, email FROM users WHERE id = $1",
+      [userId]
+    );
+    if (rows.length === 0) return res.status(404).json({ error: "User not found" });
+    const { first_name, email } = rows[0];
+
+    // Delete user — CASCADE removes all related data automatically
+    await db.query("DELETE FROM users WHERE id = $1", [userId]);
+
+    // Send farewell email (best-effort, non-fatal)
+    try {
+      await sendAccountDeletionEmail({ to: email, firstName: first_name || "there" });
+    } catch (mailErr) {
+      console.error("[mailer] deletion email failed (non-fatal):", mailErr.message);
+    }
+
+    res.json({ message: "Account deleted successfully" });
   } catch (err) {
     next(err);
   }

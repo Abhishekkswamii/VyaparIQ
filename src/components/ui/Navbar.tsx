@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { ShoppingCart, Moon, Sun } from "lucide-react";
+import VyaparIQLogo from "@/components/ui/VyaparIQLogo";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/store/cart-store";
 import { useThemeStore } from "@/store/theme-store";
@@ -39,7 +40,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/80 backdrop-blur-xl dark:border-gray-800/60 dark:bg-gray-950/80">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-5">
         <Link to="/shop" className="flex items-center gap-2">
-          <span className="text-2xl">🛒</span>
+          <VyaparIQLogo size={34} className="shadow-sm shadow-orange-500/20" />
           <span className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             {APP_NAME}
           </span>

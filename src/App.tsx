@@ -19,6 +19,8 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminInventory from "./pages/admin/AdminInventory";
 import AdminInvoices from "./pages/admin/AdminInvoices";
 import OAuthSuccessPage from "./pages/auth/OAuthSuccessPage";
+import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import OrderTrackingPage from "./pages/orders/OrderTrackingPage";
 import OrderConfirmationPage from "./pages/orders/OrderConfirmationPage";
@@ -59,6 +61,8 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Route>
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminLayout />}>

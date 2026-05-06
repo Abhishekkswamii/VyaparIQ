@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ShoppingCart, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import VyaparIQLogo from "@/components/ui/VyaparIQLogo";
 import { useAuthStore } from "@/store/auth-store";
 import { APP_NAME, APP_TAGLINE } from "@/constants/branding";
 
@@ -75,9 +76,7 @@ export default function LoginPage() {
       >
         <div className="max-w-md text-white">
           <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-              <ShoppingCart size={26} className="text-white" />
-            </div>
+            <VyaparIQLogo size={48} className="rounded-2xl shadow-lg" />
             <span className="text-3xl font-extrabold tracking-tight">{APP_NAME}</span>
           </div>
           <h2 className="text-4xl font-extrabold leading-snug">
@@ -115,7 +114,7 @@ export default function LoginPage() {
         >
           <div className="mb-8">
             <div className="mb-5 flex items-center gap-2 lg:hidden">
-              <ShoppingCart size={26} className="text-orange-500" />
+              <VyaparIQLogo size={28} />
               <span className="text-xl font-extrabold text-gray-900 dark:text-white">{APP_NAME}</span>
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Welcome to {APP_NAME}</h1>
@@ -164,9 +163,17 @@ export default function LoginPage() {
 
             {/* Password */}
             <div>
-              <label className="mb-1.5 block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Password
-              </label>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-semibold text-orange-500 hover:text-orange-600 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <Lock
                   size={17}

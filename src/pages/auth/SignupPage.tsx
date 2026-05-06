@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Mail, Lock, Eye, EyeOff, ShoppingCart, AlertCircle } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from "lucide-react";
+import VyaparIQLogo from "@/components/ui/VyaparIQLogo";
 import { useAuthStore } from "@/store/auth-store";
 import { APP_NAME } from "@/constants/branding";
 
@@ -107,9 +108,7 @@ export default function SignupPage() {
       >
         <div className="max-w-md text-white">
           <div className="mb-8 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-              <ShoppingCart size={26} className="text-white" />
-            </div>
+            <VyaparIQLogo size={48} className="rounded-2xl shadow-lg" />
             <span className="text-3xl font-extrabold tracking-tight">{APP_NAME}</span>
           </div>
           <h2 className="text-4xl font-extrabold leading-snug">
@@ -148,7 +147,7 @@ export default function SignupPage() {
         >
           <div className="mb-8">
             <div className="mb-5 flex items-center gap-2 lg:hidden">
-              <ShoppingCart size={26} className="text-orange-500" />
+              <VyaparIQLogo size={28} />
               <span className="text-xl font-extrabold text-gray-900 dark:text-white">{APP_NAME}</span>
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Create account</h1>

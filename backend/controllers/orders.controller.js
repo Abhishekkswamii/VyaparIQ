@@ -1,8 +1,9 @@
 "use strict";
 
-const { generateInvoicePdf } = require("../utils/invoicePdf");
-const { uploadInvoicePdf }   = require("../utils/gcsUpload");
-const adminEvents            = require("../utils/adminEvents");
+const { generateInvoicePdf }        = require("../utils/invoicePdf");
+const { uploadInvoicePdf }          = require("../utils/gcsUpload");
+const adminEvents                   = require("../utils/adminEvents");
+const { sendOrderConfirmationEmail } = require("../utils/mailer");
 
 // ── helpers ────────────────────────────────────────────────────────────────────
 
@@ -226,6 +227,33 @@ async function createOrder(req, res, next) {
       adminEvents.emit("invoice_ready", { orderId: order.id, invoiceId: invRows[0].invoice_id });
     } catch (invoiceErr) {
       console.error("[invoice] generation/upload failed (order still placed):", invoiceErr.message);
+    }
+
+    // ── 10. Send order confirmation email (always, outside invoice block) ────
+    try {
+      const db = req.app.get("db");
+      const { rows: userRows } = await db.query(
+        "SELECT first_name, last_name, email FROM users WHERE id = $1", [userId]
+      );
+      const u = userRows[0] || {};
+      if (u.email) {
+        await sendOrderConfirmationEmail({
+          to:        u.email,
+          firstName: u.first_name || "there",
+          order: {
+            id:             order.id,
+            created_at:     order.created_at,
+            payment_method,
+            subtotal:       computedSubtotal,
+            discount:       appliedDiscount,
+            total_amount:   totalAmount,
+            address,
+            items:          insertedItems,
+          },
+        });
+      }
+    } catch (mailErr) {
+      console.error("[mailer] confirmation email failed (non-fatal):", mailErr.message);
     }
 
     // Emit stock_update for each decremented product
