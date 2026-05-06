@@ -75,10 +75,10 @@ export default function LoginPage() {
         className="hidden flex-1 flex-col items-center justify-center bg-gradient-to-br from-orange-500 via-orange-500 to-amber-500 p-12 lg:flex"
       >
         <div className="max-w-md text-white">
-          <div className="mb-8 flex items-center gap-3">
+          <Link to="/" className="mb-8 flex items-center gap-3 hover:opacity-90 transition-opacity">
             <VyaparIQLogo size={48} className="rounded-2xl shadow-lg" />
             <span className="text-3xl font-extrabold tracking-tight">{APP_NAME}</span>
-          </div>
+          </Link>
           <h2 className="text-4xl font-extrabold leading-snug">
             Shop smarter.<br />Spend wiser.
           </h2>
@@ -113,10 +113,10 @@ export default function LoginPage() {
           className="mx-auto w-full max-w-lg"
         >
           <div className="mb-8">
-            <div className="mb-5 flex items-center gap-2 lg:hidden">
+            <Link to="/" className="mb-5 flex items-center gap-2 lg:hidden hover:opacity-80 transition-opacity">
               <VyaparIQLogo size={28} />
               <span className="text-xl font-extrabold text-gray-900 dark:text-white">{APP_NAME}</span>
-            </div>
+            </Link>
             <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Welcome to {APP_NAME}</h1>
             <p className="mt-2 text-gray-500 dark:text-gray-400">Sign in to your account to continue</p>
           </div>

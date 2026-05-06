@@ -66,10 +66,10 @@ export default function ResetPasswordPage() {
       >
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           {/* Logo */}
-          <div className="mb-6 flex items-center gap-2">
+          <Link to="/" className="mb-6 flex items-center gap-2 hover:opacity-80 transition-opacity">
             <VyaparIQLogo size={36} />
             <span className="text-lg font-extrabold text-gray-900 dark:text-white">{APP_NAME}</span>
-          </div>
+          </Link>
 
           {done ? (
             <div className="text-center">
