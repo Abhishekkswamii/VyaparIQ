@@ -38,6 +38,15 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        // CRITICAL: Don't intercept backend / OAuth navigations with the SPA shell.
+        // Without this, /api/auth/google (and other backend redirects) get served
+        // index.html → the user lands on the landing page instead of Google OAuth.
+        navigateFallbackDenylist: [/^\/api\//, /^\/uploads\//, /^\/ai\//],
+        // Take over all open tabs immediately when a new SW is deployed —
+        // prevents users getting stuck on a stale SW after deploy.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

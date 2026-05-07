@@ -104,22 +104,25 @@ router.get("/events", (req, res) => {
 
   const heartbeat = setInterval(() => res.write(":heartbeat\n\n"), 25000);
 
-  const onNewOrder    = (d) => send("new_order",    d);
-  const onOrderUpdate = (d) => send("order_update", d);
-  const onStockUpdate = (d) => send("stock_update", d);
-  const onInvoice     = (d) => send("invoice_ready",d);
+  const onNewOrder       = (d) => send("new_order",      d);
+  const onOrderUpdate    = (d) => send("order_update",   d);
+  const onStockUpdate    = (d) => send("stock_update",   d);
+  const onInvoice        = (d) => send("invoice_ready",  d);
+  const onProductChange  = (d) => send("product_change", d);
 
-  adminEvents.on("new_order",    onNewOrder);
-  adminEvents.on("order_update", onOrderUpdate);
-  adminEvents.on("stock_update", onStockUpdate);
-  adminEvents.on("invoice_ready",onInvoice);
+  adminEvents.on("new_order",     onNewOrder);
+  adminEvents.on("order_update",  onOrderUpdate);
+  adminEvents.on("stock_update",  onStockUpdate);
+  adminEvents.on("invoice_ready", onInvoice);
+  adminEvents.on("product_change",onProductChange);
 
   req.on("close", () => {
     clearInterval(heartbeat);
-    adminEvents.off("new_order",    onNewOrder);
-    adminEvents.off("order_update", onOrderUpdate);
-    adminEvents.off("stock_update", onStockUpdate);
-    adminEvents.off("invoice_ready",onInvoice);
+    adminEvents.off("new_order",     onNewOrder);
+    adminEvents.off("order_update",  onOrderUpdate);
+    adminEvents.off("stock_update",  onStockUpdate);
+    adminEvents.off("invoice_ready", onInvoice);
+    adminEvents.off("product_change",onProductChange);
   });
 });
 
@@ -203,6 +206,7 @@ router.post(
         [name, parseFloat(price), category, parseInt(stock), imageUrl]
       );
 
+      adminEvents.emit("product_change", { action: "created", product: result.rows[0] });
       res.status(201).json({ product: result.rows[0] });
     } catch (err) {
       next(err);
@@ -258,6 +262,7 @@ router.put(
         return res.status(404).json({ error: "Product not found" });
       }
 
+      adminEvents.emit("product_change", { action: "updated", product: result.rows[0] });
       res.json({ product: result.rows[0] });
     } catch (err) {
       next(err);
@@ -280,13 +285,17 @@ router.delete("/products/:id", async (req, res, next) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    // Best-effort: remove uploaded image file from disk
+    // Best-effort: remove uploaded image file from disk (handles both relative and absolute URLs)
     const imageUrl = result.rows[0].image_url;
-    if (imageUrl?.startsWith("/uploads/")) {
-      const filePath = path.join(__dirname, "..", imageUrl);
-      fs.unlink(filePath, () => {});
+    if (imageUrl) {
+      const match = imageUrl.match(/\/uploads\/(.+)$/);
+      if (match) {
+        const filePath = path.join(__dirname, "..", "uploads", match[1]);
+        fs.unlink(filePath, () => {});
+      }
     }
 
+    adminEvents.emit("product_change", { action: "deleted", id: result.rows[0].id });
     res.json({ message: "Product deleted", id: result.rows[0].id });
   } catch (err) {
     next(err);

@@ -17,7 +17,7 @@ import type { CategoryId } from "@/components/layout/CategoryBar";
 // Map category bar IDs to product data categories
 const CATEGORY_MAP: Record<CategoryId, string[]> = {
   All: [],
-  Grocery: ["Fruits", "Vegetables", "Dairy", "Bakery", "Meat", "Grains", "Pantry", "Beverages"],
+  Grocery: ["Fruits", "Vegetables", "Dairy", "Bakery", "Meat", "Grains", "Pantry", "Beverages", "Grocery", "Snacks", "Essentials"],
   Electronics: ["Electronics"],
   Fashion: ["Fashion"],
   "Budget Deals": [],

@@ -46,6 +46,7 @@ interface ProductStore {
   error: string | null;
   lastFetched: number | null;
   fetch: () => Promise<void>;
+  invalidate: () => void;
 }
 
 export const useProductStore = create<ProductStore>((set, get) => ({
@@ -54,8 +55,10 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   error: null,
   lastFetched: null,
 
+  invalidate: () => set({ lastFetched: null }),
+
   fetch: async () => {
-    const CACHE_TTL = 60_000; // 1 minute client-side cache
+    const CACHE_TTL = 15_000; // 15 second client-side cache — picks up admin changes quickly
     const { lastFetched, loading } = get();
     if (loading) return;
     if (lastFetched && Date.now() - lastFetched < CACHE_TTL) return;

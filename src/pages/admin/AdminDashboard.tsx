@@ -80,7 +80,22 @@ export default function AdminDashboard() {
       setLastEvent("Invoice generated");
       fetchAdminInvoices();
     });
-    es.onerror = () => setLiveStatus("offline");
+    es.addEventListener("product_change", (e: MessageEvent) => {
+      const d = JSON.parse(e.data ?? "{}");
+      setLastEvent(
+        d.action === "created" ? "New product added" :
+        d.action === "updated" ? "Product updated" :
+        d.action === "deleted" ? "Product deleted" : "Products changed"
+      );
+      fetchStats();
+    });
+    es.onerror = () => {
+      setLiveStatus("offline");
+      // Auto-reconnect after 5 s
+      setTimeout(() => {
+        if (esRef.current === es) setLiveStatus("connecting");
+      }, 5_000);
+    };
 
     return () => { es.close(); esRef.current = null; };
   }, [token]);

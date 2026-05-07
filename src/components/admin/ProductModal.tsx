@@ -12,7 +12,8 @@ interface ProductModalProps {
 
 const CATEGORIES = [
   "Fruits", "Vegetables", "Dairy", "Meat", "Bakery",
-  "Grains", "Pantry", "Beverages", "Grocery", "Snacks", "Essentials",
+  "Grains", "Pantry", "Beverages", "Grocery", "Snacks",
+  "Essentials", "Electronics", "Fashion",
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────

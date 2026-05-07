@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth-store";
 
 /**
@@ -10,28 +11,36 @@ import { useAuthStore } from "@/store/auth-store";
  */
 export default function OAuthSuccessPage() {
   const setFromOAuth = useAuthStore((s) => s.setFromOAuth);
+  const navigate = useNavigate();
+  // Guard so the handler runs at most once per page-lifetime.
+  // Without this, React 18 StrictMode (and Suspense remounts) double-invoke
+  // the effect — the second run sees the post-navigation URL (/dashboard,
+  // no token) and incorrectly redirects to /login?error=oauth_missing_token.
+  const handled = useRef(false);
 
   useEffect(() => {
+    if (handled.current) return;
+    handled.current = true;
+
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
     if (!token) {
-      // No token in URL — OAuth handshake did not complete
-      window.location.replace("/login?error=oauth_missing_token");
+      navigate("/login?error=oauth_missing_token", { replace: true });
       return;
     }
 
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
       setFromOAuth(token, payload);
-      // Use window.location.replace for a full reload so:
-      //  1. Zustand persist rehydrates with the newly stored token
-      //  2. React 18 StrictMode double-invocation cannot re-run this effect
-      window.location.replace(
-        payload.role === "admin" ? "/admin/dashboard" : "/dashboard"
+      // Use navigate (no full reload) so Zustand in-memory auth state is
+      // immediately available to ProtectedRoute — no race with localStorage flush.
+      navigate(
+        payload.role === "admin" ? "/admin/dashboard" : "/dashboard",
+        { replace: true }
       );
     } catch {
-      window.location.replace("/login?error=oauth_invalid_token");
+      navigate("/login?error=oauth_invalid_token", { replace: true });
     }
   }, []);
 

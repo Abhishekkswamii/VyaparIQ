@@ -21,6 +21,13 @@
         }
       },
       {
+        "source": "/uploads/**",
+        "run": {
+          "serviceId": "vyapariq-backend",
+          "region": "us-central1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
