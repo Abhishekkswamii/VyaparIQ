@@ -1,33 +1,43 @@
-import { useEffect } from "react";
+import { useEffect, lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import AppLayout from "./components/layout/AppLayout";
-import LoginPage from "./pages/auth/LoginPage";
-import SignupPage from "./pages/auth/SignupPage";
-import DashboardPage from "./pages/dashboard/DashboardPage";
-import ShopPage from "./pages/shop/ShopPage";
-import CartPage from "./pages/cart/CartPage";
-import AnalyticsPage from "./pages/analytics/AnalyticsPage";
-import CheckoutPage from "./pages/checkout/CheckoutPage";
-import OrderSuccessPage from "./pages/order-success/OrderSuccessPage";
-import ProductDetailPage from "./pages/product/ProductDetailPage";
-import OrdersPage from "./pages/orders/OrdersPage";
-import AdminLogin from "./pages/admin/AdminLogin";
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminInventory from "./pages/admin/AdminInventory";
-import AdminInvoices from "./pages/admin/AdminInvoices";
-import OAuthSuccessPage from "./pages/auth/OAuthSuccessPage";
-import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
-import ProfilePage from "./pages/profile/ProfilePage";
-import OrderTrackingPage from "./pages/orders/OrderTrackingPage";
-import OrderConfirmationPage from "./pages/orders/OrderConfirmationPage";
-import LandingPage from "./pages/landing/LandingPage";
+
+const AppLayout            = lazy(() => import("./components/layout/AppLayout"));
+const LandingPage          = lazy(() => import("./pages/landing/LandingPage"));
+const LoginPage            = lazy(() => import("./pages/auth/LoginPage"));
+const SignupPage           = lazy(() => import("./pages/auth/SignupPage"));
+const OAuthSuccessPage     = lazy(() => import("./pages/auth/OAuthSuccessPage"));
+const ForgotPasswordPage   = lazy(() => import("./pages/auth/ForgotPasswordPage"));
+const ResetPasswordPage    = lazy(() => import("./pages/auth/ResetPasswordPage"));
+const DashboardPage        = lazy(() => import("./pages/dashboard/DashboardPage"));
+const ShopPage             = lazy(() => import("./pages/shop/ShopPage"));
+const CartPage             = lazy(() => import("./pages/cart/CartPage"));
+const AnalyticsPage        = lazy(() => import("./pages/analytics/AnalyticsPage"));
+const CheckoutPage         = lazy(() => import("./pages/checkout/CheckoutPage"));
+const OrderSuccessPage     = lazy(() => import("./pages/order-success/OrderSuccessPage"));
+const ProductDetailPage    = lazy(() => import("./pages/product/ProductDetailPage"));
+const OrdersPage           = lazy(() => import("./pages/orders/OrdersPage"));
+const OrderTrackingPage    = lazy(() => import("./pages/orders/OrderTrackingPage"));
+const OrderConfirmationPage = lazy(() => import("./pages/orders/OrderConfirmationPage"));
+const ProfilePage          = lazy(() => import("./pages/profile/ProfilePage"));
+const AdminLogin           = lazy(() => import("./pages/admin/AdminLogin"));
+const AdminLayout          = lazy(() => import("./pages/admin/AdminLayout"));
+const AdminDashboard       = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminProducts        = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminOrders          = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminInventory       = lazy(() => import("./pages/admin/AdminInventory"));
+const AdminInvoices        = lazy(() => import("./pages/admin/AdminInvoices"));
+
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import AdminRoute from "./components/auth/AdminRoute";
 import { useThemeStore } from "./store/theme-store";
+
+function PageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-white dark:bg-gray-950">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+    </div>
+  );
+}
 
 export default function App() {
   const isDark = useThemeStore((s) => s.isDark);
@@ -42,6 +52,7 @@ export default function App() {
   }, [isDark]);
 
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -78,5 +89,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
